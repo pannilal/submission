@@ -6,65 +6,77 @@
   <title>Notebook Submission Tracker</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
   <style>
+    /* Reset & Base */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Poppins', sans-serif;
-      background: #f0f2f5;
-      margin: 0; padding: 20px;
+      background: #eef1f5;
       color: #333;
+      padding: 20px;
     }
-    .container {
+    /* Outer card */
+    .tracker-card {
       max-width: 960px;
       margin: auto;
-      background: #fff;
-      border-radius: 10px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      border-radius: 12px;
       overflow: hidden;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+      background: #fff;
     }
-    h1 {
-      background: #007bff;
+    /* Blue header bar */
+    .tracker-header {
+      background: #0069d9;
       color: #fff;
-      margin: 0;
-      padding: 20px;
       text-align: center;
-      font-size: 1.8rem;
+      padding: 20px;
     }
+    .tracker-header h1 {
+      font-size: 1.8rem;
+      line-height: 1.2;
+    }
+    /* Controls panel */
     .controls {
+      background: #fff;
+      border-bottom: 1px solid #ddd;
+      padding: 15px 20px;
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
-      padding: 15px 20px;
       align-items: center;
       justify-content: center;
-      background: #fafafa;
-      border-bottom: 1px solid #e0e0e0;
+      gap: 10px;
     }
-    .controls input,
-    .controls button {
-      font-size: 1rem;
+    .controls input[type="date"] {
       padding: 8px 12px;
+      font-size: 1rem;
       border: 1px solid #ccc;
       border-radius: 5px;
     }
     .controls button {
+      padding: 8px 16px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .controls #add-date {
       background: #28a745;
       color: #fff;
-      border-color: #28a745;
-      cursor: pointer;
-      transition: background .2s;
     }
-    .controls button:hover {
+    .controls #add-date:hover {
       background: #218838;
     }
-    .controls .reset-btn {
+    .controls #reset-all {
       background: #dc3545;
-      border-color: #dc3545;
+      color: #fff;
     }
-    .controls .reset-btn:hover {
+    .controls #reset-all:hover {
       background: #c82333;
     }
+    /* Table styling */
     .table-wrapper {
       overflow-x: auto;
-      padding: 20px;
+      background: #fff;
     }
     table {
       width: 100%;
@@ -77,7 +89,7 @@
       border: 1px solid #e0e0e0;
     }
     thead th {
-      background: #007bff;
+      background: #0069d9;
       color: #fff;
       position: sticky;
       top: 0;
@@ -95,24 +107,29 @@
       cursor: pointer;
     }
     .remove-date:hover {
-      color: #ffd1d1;
+      color: #ffcccc;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Notebook Submission Tracker</h1>
+
+  <div class="tracker-card">
+    <div class="tracker-header">
+      <h1>Notebook Submission Tracker</h1>
+    </div>
+
     <div class="controls">
       <input type="date" id="date-input">
       <button id="add-date">Add Submission Date</button>
-      <button id="reset-all" class="reset-btn">Reset All</button>
+      <button id="reset-all">Reset All</button>
     </div>
+
     <div class="table-wrapper">
       <table id="tracker-table"></table>
     </div>
   </div>
 
-  <!-- Supabase & App Script -->
+  <!-- Supabase client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <script>
     // ─── YOUR HARDCODED FNAC SECRET ──────────────────────────
@@ -129,7 +146,7 @@
     // ─── STATE ───────────────────────────────────────────────
     let tracker = { dates: [], data: {} };
 
-    // Ensure shape: 1–33 roll nos, boolean per date
+    // Initialize structure
     function initData(serverData) {
       const { dates = [], data = {} } = serverData || {};
       tracker.dates = Array.isArray(dates) ? dates : [];
@@ -144,7 +161,7 @@
       }
     }
 
-    // ─── LOAD ────────────────────────────────────────────────
+    // Load from Supabase (fallback to localStorage)
     async function loadTracker() {
       try {
         const { data, error } = await supabase
@@ -162,7 +179,7 @@
       render();
     }
 
-    // ─── SAVE ────────────────────────────────────────────────
+    // Save to Supabase + mirror to localStorage
     async function saveTracker() {
       try {
         const payload = { id: ROW_ID, data: tracker };
@@ -176,7 +193,7 @@
       localStorage.setItem('submissionTracker', JSON.stringify(tracker));
     }
 
-    // ─── RENDER TABLE ────────────────────────────────────────
+    // Render the table
     function render() {
       const tbl = document.getElementById('tracker-table');
       tbl.innerHTML = '';
@@ -226,7 +243,7 @@
       });
     }
 
-    // ─── CONTROLS ────────────────────────────────────────────
+    // Controls
     document.getElementById('add-date').onclick = () => {
       const d = document.getElementById('date-input').value;
       if (!d) return alert('Select a date.');
@@ -246,7 +263,7 @@
       saveTracker(); render();
     };
 
-    // ─── START ───────────────────────────────────────────────
+    // On load
     document.addEventListener('DOMContentLoaded', loadTracker);
   </script>
 </body>
