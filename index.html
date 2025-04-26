@@ -6,13 +6,44 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Notebook Submission Tracker</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
-  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js">
-// Excel export helpers
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"> 
+// Excel export helpers with styles
 function exportSheet(rows, filename) {
   const ws = XLSX.utils.json_to_sheet(rows);
+
+  const headers = Object.keys(rows[0]);
+  const tiCol = headers.indexOf("Timeliness");
+  const coCol = headers.indexOf("Completion");
+
+  rows.forEach((row, i) => {
+    const excelRow = i + 1; // header is row 0
+    const tStatus = (row.Timeliness || "").toLowerCase();
+    const cStatus = (row.Completion || "").toLowerCase();
+
+    const tiCell = XLSX.utils.encode_cell({ r: excelRow, c: tiCol });
+    const coCell = XLSX.utils.encode_cell({ r: excelRow, c: coCol });
+
+    if (ws[tiCell]) {
+      if (tStatus === "timely") {
+        ws[tiCell].s = { fill: { fgColor: { rgb: "D4EDDA" } }, font: { color: { rgb: "155724" } } };
+      } else if (tStatus === "delayed") {
+        ws[tiCell].s = { fill: { fgColor: { rgb: "F8D7DA" } }, font: { color: { rgb: "721C24" } } };
+      } else if (tStatus === "absent") {
+        ws[tiCell].s = { fill: { fgColor: { rgb: "E2E3E5" } }, font: { color: { rgb: "343A40" } } };
+      }
+    }
+    if (ws[coCell]) {
+      if (cStatus === "complete") {
+        ws[coCell].s = { fill: { fgColor: { rgb: "D4EDDA" } }, font: { color: { rgb: "155724" } } };
+      } else if (cStatus === "incomplete") {
+        ws[coCell].s = { fill: { fgColor: { rgb: "F8D7DA" } }, font: { color: { rgb: "721C24" } } };
+      }
+    }
+  });
+
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
-  XLSX.writeFile(wb, filename + ".xlsx", {bookType: "xlsx"});
+  XLSX.writeFile(wb, filename + ".xlsx", { bookType: "xlsx", cellStyles: true });
 }
 
 // "Download Full Data" button
@@ -58,13 +89,44 @@ document.getElementById('export-chapter').onclick = () => {
 };
 
 </script>
-  <script src="classLists_ready.js">
-// Excel export helpers
+  <script src="classLists_ready.js"> 
+// Excel export helpers with styles
 function exportSheet(rows, filename) {
   const ws = XLSX.utils.json_to_sheet(rows);
+
+  const headers = Object.keys(rows[0]);
+  const tiCol = headers.indexOf("Timeliness");
+  const coCol = headers.indexOf("Completion");
+
+  rows.forEach((row, i) => {
+    const excelRow = i + 1; // header is row 0
+    const tStatus = (row.Timeliness || "").toLowerCase();
+    const cStatus = (row.Completion || "").toLowerCase();
+
+    const tiCell = XLSX.utils.encode_cell({ r: excelRow, c: tiCol });
+    const coCell = XLSX.utils.encode_cell({ r: excelRow, c: coCol });
+
+    if (ws[tiCell]) {
+      if (tStatus === "timely") {
+        ws[tiCell].s = { fill: { fgColor: { rgb: "D4EDDA" } }, font: { color: { rgb: "155724" } } };
+      } else if (tStatus === "delayed") {
+        ws[tiCell].s = { fill: { fgColor: { rgb: "F8D7DA" } }, font: { color: { rgb: "721C24" } } };
+      } else if (tStatus === "absent") {
+        ws[tiCell].s = { fill: { fgColor: { rgb: "E2E3E5" } }, font: { color: { rgb: "343A40" } } };
+      }
+    }
+    if (ws[coCell]) {
+      if (cStatus === "complete") {
+        ws[coCell].s = { fill: { fgColor: { rgb: "D4EDDA" } }, font: { color: { rgb: "155724" } } };
+      } else if (cStatus === "incomplete") {
+        ws[coCell].s = { fill: { fgColor: { rgb: "F8D7DA" } }, font: { color: { rgb: "721C24" } } };
+      }
+    }
+  });
+
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
-  XLSX.writeFile(wb, filename + ".xlsx", {bookType: "xlsx"});
+  XLSX.writeFile(wb, filename + ".xlsx", { bookType: "xlsx", cellStyles: true });
 }
 
 // "Download Full Data" button
@@ -110,13 +172,44 @@ document.getElementById('export-chapter').onclick = () => {
 };
 
 </script>
-  <script src="rowColors_ready.js">
-// Excel export helpers
+  <script src="rowColors_ready.js"> 
+// Excel export helpers with styles
 function exportSheet(rows, filename) {
   const ws = XLSX.utils.json_to_sheet(rows);
+
+  const headers = Object.keys(rows[0]);
+  const tiCol = headers.indexOf("Timeliness");
+  const coCol = headers.indexOf("Completion");
+
+  rows.forEach((row, i) => {
+    const excelRow = i + 1; // header is row 0
+    const tStatus = (row.Timeliness || "").toLowerCase();
+    const cStatus = (row.Completion || "").toLowerCase();
+
+    const tiCell = XLSX.utils.encode_cell({ r: excelRow, c: tiCol });
+    const coCell = XLSX.utils.encode_cell({ r: excelRow, c: coCol });
+
+    if (ws[tiCell]) {
+      if (tStatus === "timely") {
+        ws[tiCell].s = { fill: { fgColor: { rgb: "D4EDDA" } }, font: { color: { rgb: "155724" } } };
+      } else if (tStatus === "delayed") {
+        ws[tiCell].s = { fill: { fgColor: { rgb: "F8D7DA" } }, font: { color: { rgb: "721C24" } } };
+      } else if (tStatus === "absent") {
+        ws[tiCell].s = { fill: { fgColor: { rgb: "E2E3E5" } }, font: { color: { rgb: "343A40" } } };
+      }
+    }
+    if (ws[coCell]) {
+      if (cStatus === "complete") {
+        ws[coCell].s = { fill: { fgColor: { rgb: "D4EDDA" } }, font: { color: { rgb: "155724" } } };
+      } else if (cStatus === "incomplete") {
+        ws[coCell].s = { fill: { fgColor: { rgb: "F8D7DA" } }, font: { color: { rgb: "721C24" } } };
+      }
+    }
+  });
+
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
-  XLSX.writeFile(wb, filename + ".xlsx", {bookType: "xlsx"});
+  XLSX.writeFile(wb, filename + ".xlsx", { bookType: "xlsx", cellStyles: true });
 }
 
 // "Download Full Data" button
@@ -303,13 +396,44 @@ document.addEventListener('DOMContentLoaded', ()=>{
   });
   initClass(Object.keys(classLists)[0]);
 });
-
-// Excel export helpers
+ 
+// Excel export helpers with styles
 function exportSheet(rows, filename) {
   const ws = XLSX.utils.json_to_sheet(rows);
+
+  const headers = Object.keys(rows[0]);
+  const tiCol = headers.indexOf("Timeliness");
+  const coCol = headers.indexOf("Completion");
+
+  rows.forEach((row, i) => {
+    const excelRow = i + 1; // header is row 0
+    const tStatus = (row.Timeliness || "").toLowerCase();
+    const cStatus = (row.Completion || "").toLowerCase();
+
+    const tiCell = XLSX.utils.encode_cell({ r: excelRow, c: tiCol });
+    const coCell = XLSX.utils.encode_cell({ r: excelRow, c: coCol });
+
+    if (ws[tiCell]) {
+      if (tStatus === "timely") {
+        ws[tiCell].s = { fill: { fgColor: { rgb: "D4EDDA" } }, font: { color: { rgb: "155724" } } };
+      } else if (tStatus === "delayed") {
+        ws[tiCell].s = { fill: { fgColor: { rgb: "F8D7DA" } }, font: { color: { rgb: "721C24" } } };
+      } else if (tStatus === "absent") {
+        ws[tiCell].s = { fill: { fgColor: { rgb: "E2E3E5" } }, font: { color: { rgb: "343A40" } } };
+      }
+    }
+    if (ws[coCell]) {
+      if (cStatus === "complete") {
+        ws[coCell].s = { fill: { fgColor: { rgb: "D4EDDA" } }, font: { color: { rgb: "155724" } } };
+      } else if (cStatus === "incomplete") {
+        ws[coCell].s = { fill: { fgColor: { rgb: "F8D7DA" } }, font: { color: { rgb: "721C24" } } };
+      }
+    }
+  });
+
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
-  XLSX.writeFile(wb, filename + ".xlsx", {bookType: "xlsx"});
+  XLSX.writeFile(wb, filename + ".xlsx", { bookType: "xlsx", cellStyles: true });
 }
 
 // "Download Full Data" button
