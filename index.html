@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notebook Submission Tracker</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 90%; margin: 2rem auto; padding: 1rem; }
+    h1 { text-align: center; }
+    #controls { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; justify-content: center; }
+    #controls input, #controls button { padding: 0.5rem; font-size: 1rem; }
+    table { width: 100%; border-collapse: collapse; overflow-x: auto; display: block; }
+    th, td { padding: 0.5rem; border: 1px solid #ccc; text-align: center; white-space: nowrap; }
+    th { background-color: #f4f4f4; }
+    .delete-date-btn { background: none; border: none; color: red; cursor: pointer; font-size: 0.9rem; }
+    .reset-btn { margin-top: 1rem; padding: 0.5rem 1rem; font-size: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>Notebook Submission Tracker</h1>
+  <div id="controls">
+    <input type="date" id="newDateInput" />
+    <button id="addDateBtn">Add Submission Date</button>
+    <button class="reset-btn" id="resetAllBtn">Reset All Statuses</button>
+  </div>
+  <div style="overflow-x:auto;">
+    <table>
+      <thead id="tableHead"></thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+
+  <script>
+    const storageKey = 'submissionTracker';
+    let tracker = JSON.parse(localStorage.getItem(storageKey));
+    // Initialize structure
+    if (!tracker || !tracker.dates || !tracker.data) {
+      tracker = { dates: [], data: {} };
+      for (let i = 1; i <= 33; i++) tracker.data[i] = {};
+      localStorage.setItem(storageKey, JSON.stringify(tracker));
+    }
+
+    const newDateInput = document.getElementById('newDateInput');
+    const addDateBtn = document.getElementById('addDateBtn');
+    const resetAllBtn = document.getElementById('resetAllBtn');
+    const tableHead = document.getElementById('tableHead');
+    const tableBody = document.getElementById('tableBody');
+
+    function save() {
+      localStorage.setItem(storageKey, JSON.stringify(tracker));
+    }
+
+    function render() {
+      // Header
+      tableHead.innerHTML = '';
+      const headRow = document.createElement('tr');
+      headRow.appendChild(document.createElement('th')).textContent = 'Roll No.';
+      tracker.dates.forEach(date => {
+        const th = document.createElement('th');
+        th.textContent = date;
+        // Delete date button
+        const btn = document.createElement('button');
+        btn.textContent = '✕';
+        btn.className = 'delete-date-btn';
+        btn.title = 'Remove date';
+        btn.addEventListener('click', () => {
+          if (confirm(`Remove submissions for ${date}?`)) {
+            tracker.dates = tracker.dates.filter(d => d !== date);
+            for (let roll in tracker.data) delete tracker.data[roll][date];
+            save(); render();
+          }
+        });
+        th.appendChild(btn);
+        headRow.appendChild(th);
+      });
+      tableHead.appendChild(headRow);
+
+      // Body
+      tableBody.innerHTML = '';
+      for (let i = 1; i <= 33; i++) {
+        const tr = document.createElement('tr');
+        const rollCell = document.createElement('td');
+        rollCell.textContent = i;
+        tr.appendChild(rollCell);
+        tracker.dates.forEach(date => {
+          const td = document.createElement('td');
+          const checkbox = document.createElement('input');
+          checkbox.type = 'checkbox';
+          checkbox.checked = !!tracker.data[i][date];
+          checkbox.addEventListener('change', () => {
+            tracker.data[i][date] = checkbox.checked;
+            save();
+          });
+          td.appendChild(checkbox);
+          tr.appendChild(td);
+        });
+        tableBody.appendChild(tr);
+      }
+    }
+
+    addDateBtn.addEventListener('click', () => {
+      const date = newDateInput.value;
+      if (!date) return alert('Please select a date.');
+      if (tracker.dates.includes(date)) return alert('Date already added.');
+      tracker.dates.push(date);
+      tracker.dates.sort();
+      for (let i = 1; i <= 33; i++) tracker.data[i][date] = false;
+      newDateInput.value = '';
+      save(); render();
+    });
+
+    resetAllBtn.addEventListener('click', () => {
+      if (!tracker.dates.length) return;
+      if (confirm('Reset all statuses for all dates?')) {
+        for (let d of tracker.dates) for (let roll in tracker.data) tracker.data[roll][d] = false;
+        save(); render();
+      }
+    });
+
+    // Initial render
+    render();
+  </script>
+</body>
+</html>
