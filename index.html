@@ -5,8 +5,10 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Notebook Submission Tracker</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
+
   <!-- SheetJS for Excel export -->
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+
   <style>
     /* Reset & Base */
     * { box-sizing: border-box; margin:0; padding:0; }
@@ -72,21 +74,29 @@
       padding:4px; border-radius:4px; border:1px solid #aaa;
       font-size:0.9rem; width:100%;
     }
-    .status-timely, .status-complete {
-      background:#d4edda; color:#155724;
+    /* Force colors in browser */
+    select.status-timely {
+      background-color:#d4edda!important; color:#155724!important;
     }
-    .status-delayed, .status-incomplete {
-      background:#f8d7da; color:#721c24;
+    select.status-complete {
+      background-color:#d4edda!important; color:#155724!important;
     }
-    .status-absent {
-      background:#e2e3e5; color:#343a40;
+    select.status-delayed {
+      background-color:#f8d7da!important; color:#721c24!important;
+    }
+    select.status-incomplete {
+      background-color:#f8d7da!important; color:#721c24!important;
+    }
+    select.status-absent {
+      background-color:#e2e3e5!important; color:#343a40!important;
     }
     /* disable completion when absent */
     select.status-complete:disabled,
     select.status-incomplete:disabled {
-      background:#e2e3e5; color:#343a40;
+      background-color:#e2e3e5!important; color:#343a40!important;
       cursor:not-allowed; opacity:0.7;
     }
+
     .remove-date {
       background:none; border:none; color:#fff;
       margin-left:5px; font-weight:bold; cursor:pointer;
@@ -115,19 +125,22 @@
   </div>
 
   <script>
-    // 1) YOUR CLASS LISTS: fill with up to 33 names each
+    // 1) CLASS LISTS: up to 33 names per class
     const classLists = {
-      '9-G': ['Alice','Bob','Charlie', /* … etc (33 names) … */],
-      '9-C': ['David','Eva','Frank', /* … etc … */]
+      '9-G': ['Alice','Bob','Charlie', /* … up to 33 names … */],
+      '9-C': ['David','Eva','Frank',  /* … up to 33 names … */]
     };
 
     // 2) STATE
     let currentClass = Object.keys(classLists)[0];
-    let events       = []; // {date, chapter}
-    let dataStore    = {}; // dataStore[class][roll][eventKey] = {timeliness, completeness}
+    let events       = []; 
+    let dataStore    = {};
 
-    // 3) UTIL
+    // 3) HELPERS
     function keyOf(e){ return `${e.date}|${e.chapter}`; }
+    function capitalize(s){
+      return s.charAt(0).toUpperCase()+s.slice(1);
+    }
 
     function initClass(cls){
       currentClass = cls;
@@ -165,12 +178,12 @@
         let html = `<td>${r}</td><td>${names[r-1]||''}</td>`;
         events.forEach(e=>{
           const k  = keyOf(e);
-          const st = dataStore[currentClass][r][k] || 
+          const st = dataStore[currentClass][r][k] ||
                      {timeliness:'timely', completeness:'complete'};
 
-          // timeliness
+          // Timeliness
           html += `<td>
-            <select class="status status-${st.timeliness}" 
+            <select class="status status-${st.timeliness}"
                     data-type="timeliness" data-roll="${r}" data-key="${k}">
               <option value="timely"${st.timeliness==='timely'?' selected':''}>Timely</option>
               <option value="delayed"${st.timeliness==='delayed'?' selected':''}>Delayed</option>
@@ -178,10 +191,10 @@
             </select>
           </td>`;
 
-          // completion (disable if absent)
-          const dis = st.timeliness==='absent' ? ' disabled' : '';
+          // Completion (disabled if absent)
+          const dis = st.timeliness==='absent'?' disabled':'';
           html += `<td>
-            <select class="status status-${st.completeness}" 
+            <select class="status status-${st.completeness}"
                     data-type="completion" data-roll="${r}" data-key="${k}"${dis}>
               <option value="complete"${st.completeness==='complete'?' selected':''}>Complete</option>
               <option value="incomplete"${st.completeness==='incomplete'?' selected':''}>Incomplete</option>
@@ -208,7 +221,7 @@
         sel.onchange = ()=>{
           const r  = sel.dataset.roll;
           const k  = sel.dataset.key;
-          const t  = sel.dataset.type;     // timeliness or completion
+          const t  = sel.dataset.type;
           const v  = sel.value;
           const st = dataStore[currentClass][r][k] || {};
 
@@ -219,13 +232,13 @@
             st.completeness = v;
           }
           dataStore[currentClass][r][k] = st;
-          render();  // re-render to apply colors & disables
+          render();
         };
       });
     }
 
     // 5) CONTROLS
-    // class dropdown
+    // Class selector
     const cs = document.getElementById('class-select');
     Object.keys(classLists).forEach(c=>{
       const o = document.createElement('option');
@@ -234,7 +247,7 @@
     });
     cs.onchange = ()=>initClass(cs.value);
 
-    // add date+chapter
+    // Add date & chapter
     document.getElementById('add-date').onclick = ()=>{
       const date = document.getElementById('date-input').value;
       const chap = document.getElementById('chapter-input').value.trim();
@@ -251,7 +264,7 @@
       render();
     };
 
-    // reset all for this class
+    // Reset all
     document.getElementById('reset-all').onclick = ()=>{
       if(!confirm('Clear all data for this class?')) return;
       events = [];
@@ -260,14 +273,45 @@
       render();
     };
 
-    // export utilities
-    function exportSheet(data, name){
-      const ws = XLSX.utils.json_to_sheet(data);
+    // EXPORT with styles
+    const STATUS_STYLES = {
+      Timeliness: {
+        timely:   { fg:"D4EDDA", font:"155724" },
+        delayed:  { fg:"F8D7DA", font:"721C24" },
+        absent:   { fg:"E2E3E5", font:"343A40" }
+      },
+      Completion: {
+        complete:   { fg:"D4EDDA", font:"155724" },
+        incomplete: { fg:"F8D7DA", font:"721C24" }
+      }
+    };
+
+    function exportWithStyles(rows, fileName){
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const headers = Object.keys(rows[0]);
+      const tiIdx = headers.indexOf("Timeliness");
+      const coIdx = headers.indexOf("Completion");
+      rows.forEach((row,i)=>{
+        const excelRow = i+1; // zero-based ws, header is row 0
+        const tAddr = XLSX.utils.encode_cell({r:excelRow, c:tiIdx});
+        const cAddr = XLSX.utils.encode_cell({r:excelRow, c:coIdx});
+        const t = row.Timeliness.toLowerCase();
+        const c = row.Completion.toLowerCase();
+        if(ws[tAddr]){
+          const {fg,font} = STATUS_STYLES.Timeliness[t]||{};
+          ws[tAddr].s = { fill:{patternType:"solid",fgColor:{rgb:fg}}, font:{color:{rgb:font}} };
+        }
+        if(ws[cAddr]){
+          const {fg,font} = STATUS_STYLES.Completion[c]||{};
+          ws[cAddr].s = { fill:{patternType:"solid",fgColor:{rgb:fg}}, font:{color:{rgb:font}} };
+        }
+      });
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
-      XLSX.writeFile(wb, name + '.xlsx');
+      XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+      XLSX.writeFile(wb, fileName+".xlsx", {bookType:"xlsx", cellStyles:true});
     }
-    // full export
+
+    // Full export
     document.getElementById('export-full').onclick = ()=>{
       const rows = [];
       events.forEach(e=>{
@@ -280,14 +324,15 @@
             Name:       classLists[currentClass][r-1]||'',
             Date:       e.date,
             Chapter:    e.chapter,
-            Timeliness: st.timeliness.charAt(0).toUpperCase()+st.timeliness.slice(1),
-            Completion: st.completeness.charAt(0).toUpperCase()+st.completeness.slice(1)
+            Timeliness: capitalize(st.timeliness||'timely'),
+            Completion: capitalize(st.completeness||'complete')
           });
         }
       });
-      exportSheet(rows, `${currentClass}_full`);
+      exportWithStyles(rows, `${currentClass}_full`);
     };
-    // chapter export
+
+    // Chapter export
     document.getElementById('export-chapter').onclick = ()=>{
       if(!events.length) return alert('No events to export');
       const e = events[events.length-1];
@@ -301,11 +346,11 @@
           Name:       classLists[currentClass][r-1]||'',
           Date:       e.date,
           Chapter:    e.chapter,
-          Timeliness: st.timeliness.charAt(0).toUpperCase()+st.timeliness.slice(1),
-          Completion: st.completeness.charAt(0).toUpperCase()+st.completeness.slice(1)
+          Timeliness: capitalize(st.timeliness||'timely'),
+          Completion: capitalize(st.completeness||'complete')
         });
       }
-      exportSheet(rows, `${currentClass}_${e.chapter}`);
+      exportWithStyles(rows, `${currentClass}_${e.chapter}`);
     };
 
     // INIT
