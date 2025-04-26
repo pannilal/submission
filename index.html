@@ -8,47 +8,95 @@
   <style>
     body {
       font-family: 'Poppins', sans-serif;
-      background: #f5f7fa;
-      margin: 0; padding: 20px; color: #333;
+      background: #f0f2f5;
+      margin: 0; padding: 20px;
+      color: #333;
     }
     .container {
       max-width: 960px;
       margin: auto;
       background: #fff;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+    h1 {
+      background: #007bff;
+      color: #fff;
+      margin: 0;
       padding: 20px;
+      text-align: center;
+      font-size: 1.8rem;
     }
-    h1 { text-align: center; margin-top: 0; }
     .controls {
-      display: flex; flex-wrap: wrap; gap: 10px;
-      justify-content: center; margin-bottom: 15px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 15px 20px;
+      align-items: center;
+      justify-content: center;
+      background: #fafafa;
+      border-bottom: 1px solid #e0e0e0;
     }
-    .controls input, .controls button {
-      padding: 8px 12px; font-size: 1rem;
-      border: 1px solid #ccc; border-radius: 4px;
+    .controls input,
+    .controls button {
+      font-size: 1rem;
+      padding: 8px 12px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
     }
     .controls button {
-      background: #007bff; color: #fff; border-color: #007bff;
+      background: #28a745;
+      color: #fff;
+      border-color: #28a745;
       cursor: pointer;
+      transition: background .2s;
     }
-    .controls button:hover { background: #0056b3; }
-    .table-wrapper { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; }
+    .controls button:hover {
+      background: #218838;
+    }
+    .controls .reset-btn {
+      background: #dc3545;
+      border-color: #dc3545;
+    }
+    .controls .reset-btn:hover {
+      background: #c82333;
+    }
+    .table-wrapper {
+      overflow-x: auto;
+      padding: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 600px;
+    }
     th, td {
-      padding: 8px; text-align: center;
-      border: 1px solid #e0e0e0; min-width: 50px;
+      padding: 10px;
+      text-align: center;
+      border: 1px solid #e0e0e0;
     }
     thead th {
-      background: #007bff; color: #fff;
-      position: sticky; top: 0; z-index: 1;
+      background: #007bff;
+      color: #fff;
+      position: sticky;
+      top: 0;
+      z-index: 2;
     }
-    tbody tr:nth-child(odd) { background: #f9f9f9; }
+    tbody tr:nth-child(odd) {
+      background: #f9f9f9;
+    }
     .remove-date {
-      background: none; border: none; color: #fff;
-      font-weight: bold; cursor: pointer; margin-left: 5px;
+      background: none;
+      border: none;
+      color: #fff;
+      margin-left: 5px;
+      font-weight: bold;
+      cursor: pointer;
     }
-    .remove-date:hover { color: #ffdddd; }
+    .remove-date:hover {
+      color: #ffd1d1;
+    }
   </style>
 </head>
 <body>
@@ -57,32 +105,35 @@
     <div class="controls">
       <input type="date" id="date-input">
       <button id="add-date">Add Submission Date</button>
-      <button id="reset-all">Reset All Statuses</button>
+      <button id="reset-all" class="reset-btn">Reset All</button>
     </div>
     <div class="table-wrapper">
       <table id="tracker-table"></table>
     </div>
   </div>
 
+  <!-- Supabase & App Script -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <script>
-    // ───────────────────────────────────────────────────
-    // YOUR HARDCODED FNAC SECRET
-    const FNAC_SECRET = 
+    // ─── YOUR HARDCODED FNAC SECRET ──────────────────────────
+    const FNAC_SECRET =
       'fnacapi_omd2ZXJzaW9uAWdwYXlsb2FkWFiiYmlkcjQyOTI3NzQ1ODYwNTI3Nzc2MWZzZWNyZXR4OGo2cDlYUlR6YmR3NXlFc1BRWjhFNFBTRlBYUnpVdkZXazNVSWgzWE5YMUg5dXl4MjgvbWhVZz09';
 
-    // CONFIG
-    const API_LOAD = '/.netlify/functions/load';
-    const API_SAVE = '/.netlify/functions/save';
+    // ─── SUPABASE CONFIG ─────────────────────────────────────
+    const SUPABASE_URL = 'https://auirudgmwlkdscgodwte.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1aXJ1ZGdtd2xrZHNjZ29kd3RlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU2NTI4OTgsImV4cCI6MjA2MTIyODg5OH0.ItuC1WisauB7SpDI0U4Qxl0Qz77IeSMpqh4NWrIej-A';
+    const supabase     = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const TABLE_NAME   = 'tracker';
+    const ROW_ID       = 'notebookTracker';
 
-    // STATE
+    // ─── STATE ───────────────────────────────────────────────
     let tracker = { dates: [], data: {} };
 
-    // Ensure shape: dates array + data{1…33:{date:bool}}
+    // Ensure shape: 1–33 roll nos, boolean per date
     function initData(serverData) {
       const { dates = [], data = {} } = serverData || {};
       tracker.dates = Array.isArray(dates) ? dates : [];
-      tracker.data  = typeof data === 'object' ? data : {};
-
+      tracker.data  = (data && typeof data === 'object') ? data : {};
       for (let r = 1; r <= 33; r++) {
         if (!tracker.data[r]) tracker.data[r] = {};
         tracker.dates.forEach(d => {
@@ -93,41 +144,44 @@
       }
     }
 
-    // Load (Fauna → fallback localStorage)
+    // ─── LOAD ────────────────────────────────────────────────
     async function loadTracker() {
       try {
-        const res = await fetch(API_LOAD);
-        if (!res.ok) throw new Error(res.status);
-        const json = await res.json();
-        initData(json);
-      } catch {
-        console.warn('Load failed, using localStorage');
+        const { data, error } = await supabase
+          .from(TABLE_NAME)
+          .select('data')
+          .eq('id', ROW_ID)
+          .single();
+        if (error && error.code !== 'PGRST116') throw error;
+        initData(data?.data);
+      } catch (e) {
+        console.warn('Supabase load failed, using localStorage', e);
         const stored = localStorage.getItem('submissionTracker');
         initData(stored ? JSON.parse(stored) : {});
       }
       render();
     }
 
-    // Save (Fauna + mirror to localStorage)
+    // ─── SAVE ────────────────────────────────────────────────
     async function saveTracker() {
       try {
-        await fetch(API_SAVE, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(tracker)
-        });
-      } catch (err) {
-        console.error('Fauna save error', err);
+        const payload = { id: ROW_ID, data: tracker };
+        const { error } = await supabase
+          .from(TABLE_NAME)
+          .upsert(payload, { onConflict: 'id' });
+        if (error) throw error;
+      } catch (e) {
+        console.error('Supabase save failed', e);
       }
       localStorage.setItem('submissionTracker', JSON.stringify(tracker));
     }
 
-    // Build table
+    // ─── RENDER TABLE ────────────────────────────────────────
     function render() {
       const tbl = document.getElementById('tracker-table');
       tbl.innerHTML = '';
 
-      // Header row
+      // Header
       const thead = document.createElement('thead');
       const hr    = document.createElement('tr');
       hr.innerHTML = '<th>Roll No.</th>' +
@@ -137,21 +191,21 @@
       thead.appendChild(hr);
       tbl.appendChild(thead);
 
-      // Body rows
+      // Body
       const tbody = document.createElement('tbody');
       for (let r = 1; r <= 33; r++) {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${r}</td>` +
+        const row = document.createElement('tr');
+        row.innerHTML = `<td>${r}</td>` +
           tracker.dates.map(d =>
             `<td><input type="checkbox" data-roll="${r}" data-date="${d}"${
               tracker.data[r][d] ? ' checked' : ''
             }></td>`
           ).join('');
-        tbody.appendChild(tr);
+        tbody.appendChild(row);
       }
       tbl.appendChild(tbody);
 
-      // Wire up checkboxes
+      // Checkbox handlers
       tbl.querySelectorAll('input[type=checkbox]').forEach(cb => {
         cb.addEventListener('change', () => {
           const r = cb.dataset.roll, d = cb.dataset.date;
@@ -160,27 +214,29 @@
         });
       });
 
-      // Remove-date buttons
+      // Remove-date handlers
       tbl.querySelectorAll('.remove-date').forEach(btn => {
         btn.addEventListener('click', () => {
           const d = btn.dataset.date;
           tracker.dates = tracker.dates.filter(x => x !== d);
           for (let r = 1; r <= 33; r++) delete tracker.data[r][d];
-          saveTracker(); render();
+          saveTracker();
+          render();
         });
       });
     }
 
-    // Controls
-    document.getElementById('add-date').addEventListener('click', () => {
+    // ─── CONTROLS ────────────────────────────────────────────
+    document.getElementById('add-date').onclick = () => {
       const d = document.getElementById('date-input').value;
       if (!d) return alert('Select a date.');
       if (tracker.dates.includes(d)) return alert('Date already added.');
       tracker.dates.push(d);
       for (let r = 1; r <= 33; r++) tracker.data[r][d] = false;
       saveTracker(); render();
-    });
-    document.getElementById('reset-all').addEventListener('click', () => {
+    };
+
+    document.getElementById('reset-all').onclick = () => {
       if (!confirm('Clear all statuses?')) return;
       tracker.dates.forEach(d =>
         Object.keys(tracker.data).forEach(r => {
@@ -188,9 +244,9 @@
         })
       );
       saveTracker(); render();
-    });
+    };
 
-    // Kickoff
+    // ─── START ───────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', loadTracker);
   </script>
 </body>
