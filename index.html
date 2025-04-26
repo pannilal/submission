@@ -1,19 +1,127 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Notebook Submission Tracker</title>
+  <!-- Google Font -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet" />
   <style>
-    /* [existing styled CSS from before] */
+    :root {
+      --primary: #4a90e2;
+      --primary-dark: #357ab8;
+      --bg: #f7f9fc;
+      --white: #ffffff;
+      --gray-light: #e2e8f0;
+      --gray: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: var(--bg);
+      color: #333;
+      line-height: 1.6;
+      padding: 2rem;
+    }
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      background: var(--white);
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    h1 {
+      text-align: center;
+      font-weight: 600;
+      color: var(--primary-dark);
+      margin-bottom: 1.5rem;
+    }
+    #controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      justify-content: center;
+      margin-bottom: 1.5rem;
+    }
+    #controls input[type='date'],
+    #controls button {
+      padding: 0.6rem 1.2rem;
+      font-size: 1rem;
+      border: 1px solid var(--gray-light);
+      border-radius: 8px;
+      background: var(--white);
+      transition: all 0.2s ease;
+    }
+    #controls input[type='date']:focus,
+    #controls button:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(74,144,226,0.2);
+    }
+    #controls button {
+      cursor: pointer;
+      background: var(--primary);
+      color: var(--white);
+      border: none;
+    }
+    #controls button:hover {
+      background: var(--primary-dark);
+    }
+    .reset-btn {
+      background: #ff6b6b;
+    }
+    .reset-btn:hover {
+      background: #e25555;
+    }
+    .table-wrapper {
+      overflow-x: auto;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--white);
+    }
+    th, td {
+      padding: 0.75rem;
+      text-align: center;
+      border-bottom: 1px solid var(--gray-light);
+      white-space: nowrap;
+    }
+    th {
+      background: var(--primary);
+      color: var(--white);
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    tr:nth-child(even) {
+      background: #f4f6f8;
+    }
+    .delete-date-btn {
+      background: none;
+      border: none;
+      color: #ff6b6b;
+      cursor: pointer;
+      font-size: 0.9rem;
+      margin-left: 0.3rem;
+    }
+    .delete-date-btn:hover {
+      color: #e25555;
+    }
+    input[type='checkbox'] {
+      transform: scale(1.2);
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>Notebook Submission Tracker</h1>
     <div id="controls">
-      <input type="date" id="newDateInput" />
+      <input type="date" id="newDateInput" aria-label="Select date to add" />
       <button id="addDateBtn">Add Submission Date</button>
       <button class="reset-btn" id="resetAllBtn">Reset All Statuses</button>
     </div>
@@ -26,6 +134,9 @@
   </div>
 
   <script>
+    // Hardcoded Fnac API key (for future Fnac integrations)
+    const FNAC_API_KEY = "fnacapi_omd2ZXJzaW9uAWdwYXlsb2FkWFiiYmlkcjQyOTI3NzQ1ODYwNTI3Nzc2MWZzZWNyZXR4OGo2cDlYUlR6YmR3NXlFc1BRWjhFNFBTRlBYUnpVdkZXazNVSWgzWE5YMUg5dXl4MjgvbWhVZz09";
+
     const FUNC_LOAD = '/.netlify/functions/load';
     const FUNC_SAVE = '/.netlify/functions/save';
     let tracker;
@@ -34,10 +145,9 @@
       try {
         const res = await fetch(FUNC_LOAD);
         tracker = await res.json();
-      } catch (e) {
+      } catch {
         tracker = null;
       }
-      // Ensure structure
       if (!tracker || !tracker.dates || !tracker.data) {
         tracker = { dates: [], data: {} };
         for (let i = 1; i <= 33; i++) tracker.data[i] = {};
@@ -52,7 +162,69 @@
       });
     }
 
-    // [render(), event handlers, identical to previous script but calling saveTracker()]
+    function render() {
+      const tableHead = document.getElementById('tableHead');
+      const tableBody = document.getElementById('tableBody');
+      tableHead.innerHTML = '';
+      const headRow = document.createElement('tr');
+      const thRoll = document.createElement('th'); thRoll.textContent = 'Roll No.';
+      headRow.appendChild(thRoll);
+      tracker.dates.forEach(date => {
+        const th = document.createElement('th');
+        th.textContent = date;
+        const btn = document.createElement('button');
+        btn.textContent = '✕'; btn.className = 'delete-date-btn';
+        btn.title = 'Remove date';
+        btn.addEventListener('click', () => {
+          if (confirm(`Remove submissions for ${date}?`)) {
+            tracker.dates = tracker.dates.filter(d => d !== date);
+            Object.values(tracker.data).forEach(row => delete row[date]);
+            saveTracker(); render();
+          }
+        });
+        th.appendChild(btn);
+        headRow.appendChild(th);
+      });
+      tableHead.appendChild(headRow);
+
+      tableBody.innerHTML = '';
+      for (let i = 1; i <= 33; i++) {
+        const tr = document.createElement('tr');
+        const tdRoll = document.createElement('td'); tdRoll.textContent = i;
+        tr.appendChild(tdRoll);
+        tracker.dates.forEach(date => {
+          const td = document.createElement('td');
+          const cb = document.createElement('input'); cb.type = 'checkbox';
+          cb.checked = !!tracker.data[i][date];
+          cb.addEventListener('change', () => {
+            tracker.data[i][date] = cb.checked;
+            saveTracker();
+          });
+          td.appendChild(cb);
+          tr.appendChild(td);
+        });
+        tableBody.appendChild(tr);
+      }
+    }
+
+    document.getElementById('addDateBtn').addEventListener('click', () => {
+      const date = document.getElementById('newDateInput').value;
+      if (!date) return alert('Please select a date.');
+      if (tracker.dates.includes(date)) return alert('Date already added.');
+      tracker.dates.push(date);
+      tracker.dates.sort();
+      for (let i = 1; i <= 33; i++) tracker.data[i][date] = false;
+      document.getElementById('newDateInput').value = '';
+      saveTracker(); render();
+    });
+
+    document.getElementById('resetAllBtn').addEventListener('click', () => {
+      if (!tracker.dates.length) return;
+      if (confirm('Reset all statuses for all dates?')) {
+        tracker.dates.forEach(d => Object.keys(tracker.data).forEach(r => tracker.data[r][d] = false));
+        saveTracker(); render();
+      }
+    });
 
     document.addEventListener('DOMContentLoaded', loadTracker);
   </script>
