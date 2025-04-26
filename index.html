@@ -9,9 +9,7 @@
     body {
       font-family: 'Poppins', sans-serif;
       background: #f5f7fa;
-      margin: 0;
-      padding: 20px;
-      color: #333;
+      margin: 0; padding: 20px; color: #333;
     }
     .container {
       max-width: 960px;
@@ -21,67 +19,36 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
       padding: 20px;
     }
-    h1 {
-      text-align: center;
-      margin-top: 0;
-    }
+    h1 { text-align: center; margin-top: 0; }
     .controls {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      justify-content: center;
-      margin-bottom: 15px;
+      display: flex; flex-wrap: wrap; gap: 10px;
+      justify-content: center; margin-bottom: 15px;
     }
-    .controls input,
-    .controls button {
-      padding: 8px 12px;
-      font-size: 1rem;
-      border: 1px solid #ccc;
-      border-radius: 4px;
+    .controls input, .controls button {
+      padding: 8px 12px; font-size: 1rem;
+      border: 1px solid #ccc; border-radius: 4px;
     }
     .controls button {
-      background: #007bff;
-      color: #fff;
-      border-color: #007bff;
+      background: #007bff; color: #fff; border-color: #007bff;
       cursor: pointer;
     }
-    .controls button:hover {
-      background: #0056b3;
-    }
-    .table-wrapper {
-      overflow-x: auto;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
+    .controls button:hover { background: #0056b3; }
+    .table-wrapper { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
     th, td {
-      padding: 8px;
-      text-align: center;
-      border: 1px solid #e0e0e0;
-      min-width: 50px;
+      padding: 8px; text-align: center;
+      border: 1px solid #e0e0e0; min-width: 50px;
     }
     thead th {
-      background: #007bff;
-      color: #fff;
-      position: sticky;
-      top: 0;
-      z-index: 1;
+      background: #007bff; color: #fff;
+      position: sticky; top: 0; z-index: 1;
     }
-    tbody tr:nth-child(odd) {
-      background: #f9f9f9;
-    }
+    tbody tr:nth-child(odd) { background: #f9f9f9; }
     .remove-date {
-      background: none;
-      border: none;
-      color: #fff;
-      font-weight: bold;
-      cursor: pointer;
-      margin-left: 5px;
+      background: none; border: none; color: #fff;
+      font-weight: bold; cursor: pointer; margin-left: 5px;
     }
-    .remove-date:hover {
-      color: #ffdddd;
-    }
+    .remove-date:hover { color: #ffdddd; }
   </style>
 </head>
 <body>
@@ -98,153 +65,133 @@
   </div>
 
   <script>
-  // ───────────────────────────────────────────────────────────────
-  // CONFIG
-  const API_LOAD = '/.netlify/functions/load';
-  const API_SAVE = '/.netlify/functions/save';
+    // ───────────────────────────────────────────────────
+    // YOUR HARDCODED FNAC SECRET
+    const FNAC_SECRET = 
+      'fnacapi_omd2ZXJzaW9uAWdwYXlsb2FkWFiiYmlkcjQyOTI3NzQ1ODYwNTI3Nzc2MWZzZWNyZXR4OGo2cDlYUlR6YmR3NXlFc1BRWjhFNFBTRlBYUnpVdkZXazNVSWgzWE5YMUg5dXl4MjgvbWhVZz09';
 
-  // ───────────────────────────────────────────────────────────────
-  // STATE
-  let tracker = {
-    dates: [],
-    data: {}
-  };
+    // CONFIG
+    const API_LOAD = '/.netlify/functions/load';
+    const API_SAVE = '/.netlify/functions/save';
 
-  // ───────────────────────────────────────────────────────────────
-  // INITIALIZE tracker.data and tracker.dates to safe defaults
-  function initData(serverData) {
-    const { dates = [], data = {} } = serverData || {};
-    tracker.dates = Array.isArray(dates) ? dates : [];
-    tracker.data = typeof data === 'object' ? data : {};
+    // STATE
+    let tracker = { dates: [], data: {} };
 
-    // ensure roll-nos 1–33 exist, and each date key is boolean
-    for (let r = 1; r <= 33; r++) {
-      if (!tracker.data[r]) tracker.data[r] = {};
-      tracker.dates.forEach(d => {
-        if (typeof tracker.data[r][d] !== 'boolean') {
-          tracker.data[r][d] = false;
-        }
-      });
-    }
-  }
+    // Ensure shape: dates array + data{1…33:{date:bool}}
+    function initData(serverData) {
+      const { dates = [], data = {} } = serverData || {};
+      tracker.dates = Array.isArray(dates) ? dates : [];
+      tracker.data  = typeof data === 'object' ? data : {};
 
-  // ───────────────────────────────────────────────────────────────
-  // LOAD from Fauna (or localStorage fallback)
-  async function loadTracker() {
-    try {
-      const res = await fetch(API_LOAD);
-      if (!res.ok) throw new Error(`Load failed ${res.status}`);
-      const json = await res.json();
-      initData(json);
-    } catch (err) {
-      console.warn('Load error, falling back to localStorage', err);
-      const stored = localStorage.getItem('submissionTracker');
-      if (stored) {
-        initData(JSON.parse(stored));
-      } else {
-        initData({});
+      for (let r = 1; r <= 33; r++) {
+        if (!tracker.data[r]) tracker.data[r] = {};
+        tracker.dates.forEach(d => {
+          if (typeof tracker.data[r][d] !== 'boolean') {
+            tracker.data[r][d] = false;
+          }
+        });
       }
     }
-    render();
-  }
 
-  // ───────────────────────────────────────────────────────────────
-  // SAVE to Fauna (and mirror to localStorage)
-  async function saveTracker() {
-    try {
-      await fetch(API_SAVE, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(tracker)
-      });
-    } catch (err) {
-      console.error('Save error (Fauna)', err);
+    // Load (Fauna → fallback localStorage)
+    async function loadTracker() {
+      try {
+        const res = await fetch(API_LOAD);
+        if (!res.ok) throw new Error(res.status);
+        const json = await res.json();
+        initData(json);
+      } catch {
+        console.warn('Load failed, using localStorage');
+        const stored = localStorage.getItem('submissionTracker');
+        initData(stored ? JSON.parse(stored) : {});
+      }
+      render();
     }
-    localStorage.setItem('submissionTracker', JSON.stringify(tracker));
-  }
 
-  // ───────────────────────────────────────────────────────────────
-  // RENDER TABLE
-  function render() {
-    const tbl = document.getElementById('tracker-table');
-    tbl.innerHTML = '';
+    // Save (Fauna + mirror to localStorage)
+    async function saveTracker() {
+      try {
+        await fetch(API_SAVE, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(tracker)
+        });
+      } catch (err) {
+        console.error('Fauna save error', err);
+      }
+      localStorage.setItem('submissionTracker', JSON.stringify(tracker));
+    }
 
-    // HEADER
-    const thead = document.createElement('thead');
-    const hr = document.createElement('tr');
-    hr.innerHTML = '<th>Roll No.</th>' +
-      tracker.dates.map(d =>
-        `<th>${d}<button class="remove-date" data-date="${d}">×</button></th>`
-      ).join('');
-    thead.appendChild(hr);
-    tbl.appendChild(thead);
+    // Build table
+    function render() {
+      const tbl = document.getElementById('tracker-table');
+      tbl.innerHTML = '';
 
-    // BODY
-    const tbody = document.createElement('tbody');
-    for (let r = 1; r <= 33; r++) {
-      const tr = document.createElement('tr');
-      const cellNo = document.createElement('td');
-      cellNo.textContent = r;
-      tr.appendChild(cellNo);
+      // Header row
+      const thead = document.createElement('thead');
+      const hr    = document.createElement('tr');
+      hr.innerHTML = '<th>Roll No.</th>' +
+        tracker.dates.map(d =>
+          `<th>${d}<button class="remove-date" data-date="${d}">×</button></th>`
+        ).join('');
+      thead.appendChild(hr);
+      tbl.appendChild(thead);
 
-      tracker.dates.forEach(date => {
-        const td = document.createElement('td');
-        const cb = document.createElement('input');
-        cb.type = 'checkbox';
-        cb.checked = tracker.data[r][date];
+      // Body rows
+      const tbody = document.createElement('tbody');
+      for (let r = 1; r <= 33; r++) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${r}</td>` +
+          tracker.dates.map(d =>
+            `<td><input type="checkbox" data-roll="${r}" data-date="${d}"${
+              tracker.data[r][d] ? ' checked' : ''
+            }></td>`
+          ).join('');
+        tbody.appendChild(tr);
+      }
+      tbl.appendChild(tbody);
+
+      // Wire up checkboxes
+      tbl.querySelectorAll('input[type=checkbox]').forEach(cb => {
         cb.addEventListener('change', () => {
-          tracker.data[r][date] = cb.checked;
+          const r = cb.dataset.roll, d = cb.dataset.date;
+          tracker.data[r][d] = cb.checked;
           saveTracker();
         });
-        td.appendChild(cb);
-        tr.appendChild(td);
       });
 
-      tbody.appendChild(tr);
+      // Remove-date buttons
+      tbl.querySelectorAll('.remove-date').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const d = btn.dataset.date;
+          tracker.dates = tracker.dates.filter(x => x !== d);
+          for (let r = 1; r <= 33; r++) delete tracker.data[r][d];
+          saveTracker(); render();
+        });
+      });
     }
-    tbl.appendChild(tbody);
 
-    // REMOVE-DATE HANDLERS
-    document.querySelectorAll('.remove-date').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const d = btn.dataset.date;
-        tracker.dates = tracker.dates.filter(x => x !== d);
-        for (let r = 1; r <= 33; r++) {
-          delete tracker.data[r][d];
-        }
-        saveTracker();
-        render();
-      });
+    // Controls
+    document.getElementById('add-date').addEventListener('click', () => {
+      const d = document.getElementById('date-input').value;
+      if (!d) return alert('Select a date.');
+      if (tracker.dates.includes(d)) return alert('Date already added.');
+      tracker.dates.push(d);
+      for (let r = 1; r <= 33; r++) tracker.data[r][d] = false;
+      saveTracker(); render();
     });
-  }
-
-  // ───────────────────────────────────────────────────────────────
-  // CONTROLS
-  document.getElementById('add-date').addEventListener('click', () => {
-    const input = document.getElementById('date-input');
-    const d = input.value;
-    if (!d) return alert('Please select a date first.');
-    if (tracker.dates.includes(d)) return alert('Date already added.');
-    tracker.dates.push(d);
-    for (let r = 1; r <= 33; r++) tracker.data[r][d] = false;
-    saveTracker();
-    render();
-  });
-
-  document.getElementById('reset-all').addEventListener('click', () => {
-    if (!confirm('Clear all submission statuses?')) return;
-    tracker.dates.forEach(d => {
-      for (let r = 1; r <= 33; r++) {
-        tracker.data[r][d] = false;
-      }
+    document.getElementById('reset-all').addEventListener('click', () => {
+      if (!confirm('Clear all statuses?')) return;
+      tracker.dates.forEach(d =>
+        Object.keys(tracker.data).forEach(r => {
+          tracker.data[r][d] = false;
+        })
+      );
+      saveTracker(); render();
     });
-    saveTracker();
-    render();
-  });
 
-  // ───────────────────────────────────────────────────────────────
-  // START
-  document.addEventListener('DOMContentLoaded', loadTracker);
+    // Kickoff
+    document.addEventListener('DOMContentLoaded', loadTracker);
   </script>
 </body>
 </html>
