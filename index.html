@@ -6,9 +6,162 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Notebook Submission Tracker</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
-  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
-  <script src="classLists_ready.js"></script>
-  <script src="rowColors_ready.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js">
+// Excel export helpers
+function exportSheet(rows, filename) {
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+  XLSX.writeFile(wb, filename + ".xlsx", {bookType: "xlsx"});
+}
+
+// "Download Full Data" button
+document.getElementById('export-full').onclick = () => {
+  const rows = [];
+  events.forEach(e => {
+    const k = keyOf(e);
+    for (let r = 1; r <= classLists[currentClass].length; r++) {
+      const st = dataStore[currentClass][r][k] || {timeliness:'timely',completion:'complete'};
+      rows.push({
+        Class: currentClass,
+        Roll: r,
+        Name: classLists[currentClass][r-1],
+        Date: e.date,
+        Chapter: e.chapter,
+        Timeliness: capitalize(st.timeliness),
+        Completion: capitalize(st.completion)
+      });
+    }
+  });
+  exportSheet(rows, currentClass + "_full_data");
+};
+
+// "Download Chapter" button (latest event)
+document.getElementById('export-chapter').onclick = () => {
+  if (!events.length) return alert('No chapters to export!');
+  const e = events[events.length-1];
+  const k = keyOf(e);
+  const rows = [];
+  for (let r = 1; r <= classLists[currentClass].length; r++) {
+    const st = dataStore[currentClass][r][k] || {timeliness:'timely',completion:'complete'};
+    rows.push({
+      Class: currentClass,
+      Roll: r,
+      Name: classLists[currentClass][r-1],
+      Date: e.date,
+      Chapter: e.chapter,
+      Timeliness: capitalize(st.timeliness),
+      Completion: capitalize(st.completion)
+    });
+  }
+  exportSheet(rows, currentClass + "_" + e.chapter.replace(/\s+/g,'_'));
+};
+
+</script>
+  <script src="classLists_ready.js">
+// Excel export helpers
+function exportSheet(rows, filename) {
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+  XLSX.writeFile(wb, filename + ".xlsx", {bookType: "xlsx"});
+}
+
+// "Download Full Data" button
+document.getElementById('export-full').onclick = () => {
+  const rows = [];
+  events.forEach(e => {
+    const k = keyOf(e);
+    for (let r = 1; r <= classLists[currentClass].length; r++) {
+      const st = dataStore[currentClass][r][k] || {timeliness:'timely',completion:'complete'};
+      rows.push({
+        Class: currentClass,
+        Roll: r,
+        Name: classLists[currentClass][r-1],
+        Date: e.date,
+        Chapter: e.chapter,
+        Timeliness: capitalize(st.timeliness),
+        Completion: capitalize(st.completion)
+      });
+    }
+  });
+  exportSheet(rows, currentClass + "_full_data");
+};
+
+// "Download Chapter" button (latest event)
+document.getElementById('export-chapter').onclick = () => {
+  if (!events.length) return alert('No chapters to export!');
+  const e = events[events.length-1];
+  const k = keyOf(e);
+  const rows = [];
+  for (let r = 1; r <= classLists[currentClass].length; r++) {
+    const st = dataStore[currentClass][r][k] || {timeliness:'timely',completion:'complete'};
+    rows.push({
+      Class: currentClass,
+      Roll: r,
+      Name: classLists[currentClass][r-1],
+      Date: e.date,
+      Chapter: e.chapter,
+      Timeliness: capitalize(st.timeliness),
+      Completion: capitalize(st.completion)
+    });
+  }
+  exportSheet(rows, currentClass + "_" + e.chapter.replace(/\s+/g,'_'));
+};
+
+</script>
+  <script src="rowColors_ready.js">
+// Excel export helpers
+function exportSheet(rows, filename) {
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+  XLSX.writeFile(wb, filename + ".xlsx", {bookType: "xlsx"});
+}
+
+// "Download Full Data" button
+document.getElementById('export-full').onclick = () => {
+  const rows = [];
+  events.forEach(e => {
+    const k = keyOf(e);
+    for (let r = 1; r <= classLists[currentClass].length; r++) {
+      const st = dataStore[currentClass][r][k] || {timeliness:'timely',completion:'complete'};
+      rows.push({
+        Class: currentClass,
+        Roll: r,
+        Name: classLists[currentClass][r-1],
+        Date: e.date,
+        Chapter: e.chapter,
+        Timeliness: capitalize(st.timeliness),
+        Completion: capitalize(st.completion)
+      });
+    }
+  });
+  exportSheet(rows, currentClass + "_full_data");
+};
+
+// "Download Chapter" button (latest event)
+document.getElementById('export-chapter').onclick = () => {
+  if (!events.length) return alert('No chapters to export!');
+  const e = events[events.length-1];
+  const k = keyOf(e);
+  const rows = [];
+  for (let r = 1; r <= classLists[currentClass].length; r++) {
+    const st = dataStore[currentClass][r][k] || {timeliness:'timely',completion:'complete'};
+    rows.push({
+      Class: currentClass,
+      Roll: r,
+      Name: classLists[currentClass][r-1],
+      Date: e.date,
+      Chapter: e.chapter,
+      Timeliness: capitalize(st.timeliness),
+      Completion: capitalize(st.completion)
+    });
+  }
+  exportSheet(rows, currentClass + "_" + e.chapter.replace(/\s+/g,'_'));
+};
+
+</script>
   <style>
     * { box-sizing: border-box; margin:0; padding:0; }
     body { font-family: 'Poppins', sans-serif; background:#eef1f5; color:#333; padding:20px; }
@@ -150,6 +303,57 @@ document.addEventListener('DOMContentLoaded', ()=>{
   });
   initClass(Object.keys(classLists)[0]);
 });
+
+// Excel export helpers
+function exportSheet(rows, filename) {
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+  XLSX.writeFile(wb, filename + ".xlsx", {bookType: "xlsx"});
+}
+
+// "Download Full Data" button
+document.getElementById('export-full').onclick = () => {
+  const rows = [];
+  events.forEach(e => {
+    const k = keyOf(e);
+    for (let r = 1; r <= classLists[currentClass].length; r++) {
+      const st = dataStore[currentClass][r][k] || {timeliness:'timely',completion:'complete'};
+      rows.push({
+        Class: currentClass,
+        Roll: r,
+        Name: classLists[currentClass][r-1],
+        Date: e.date,
+        Chapter: e.chapter,
+        Timeliness: capitalize(st.timeliness),
+        Completion: capitalize(st.completion)
+      });
+    }
+  });
+  exportSheet(rows, currentClass + "_full_data");
+};
+
+// "Download Chapter" button (latest event)
+document.getElementById('export-chapter').onclick = () => {
+  if (!events.length) return alert('No chapters to export!');
+  const e = events[events.length-1];
+  const k = keyOf(e);
+  const rows = [];
+  for (let r = 1; r <= classLists[currentClass].length; r++) {
+    const st = dataStore[currentClass][r][k] || {timeliness:'timely',completion:'complete'};
+    rows.push({
+      Class: currentClass,
+      Roll: r,
+      Name: classLists[currentClass][r-1],
+      Date: e.date,
+      Chapter: e.chapter,
+      Timeliness: capitalize(st.timeliness),
+      Completion: capitalize(st.completion)
+    });
+  }
+  exportSheet(rows, currentClass + "_" + e.chapter.replace(/\s+/g,'_'));
+};
+
 </script>
 
 </body>
