@@ -139,14 +139,16 @@
     // ─── SUPABASE CONFIG ─────────────────────────────────────
     const SUPABASE_URL = 'https://auirudgmwlkdscgodwte.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1aXJ1ZGdtd2xrZHNjZ29kd3RlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU2NTI4OTgsImV4cCI6MjA2MTIyODg5OH0.ItuC1WisauB7SpDI0U4Qxl0Qz77IeSMpqh4NWrIej-A';
-    const supabase     = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    const TABLE_NAME   = 'tracker';
-    const ROW_ID       = 'notebookTracker';
+    // rename to avoid clashing with the injected global
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const TABLE_NAME = 'tracker';
+    const ROW_ID     = 'notebookTracker';
 
     // ─── STATE ───────────────────────────────────────────────
     let tracker = { dates: [], data: {} };
 
-    // Initialize structure
+    // Initialize structure to always have roll nos 1–33 and boolean flags
     function initData(serverData) {
       const { dates = [], data = {} } = serverData || {};
       tracker.dates = Array.isArray(dates) ? dates : [];
@@ -161,10 +163,10 @@
       }
     }
 
-    // Load from Supabase (fallback to localStorage)
+    // ─── LOAD ────────────────────────────────────────────────
     async function loadTracker() {
       try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
           .from(TABLE_NAME)
           .select('data')
           .eq('id', ROW_ID)
@@ -172,18 +174,18 @@
         if (error && error.code !== 'PGRST116') throw error;
         initData(data?.data);
       } catch (e) {
-        console.warn('Supabase load failed, using localStorage', e);
+        console.warn('Supabase load failed, falling back to localStorage', e);
         const stored = localStorage.getItem('submissionTracker');
         initData(stored ? JSON.parse(stored) : {});
       }
       render();
     }
 
-    // Save to Supabase + mirror to localStorage
+    // ─── SAVE ────────────────────────────────────────────────
     async function saveTracker() {
       try {
         const payload = { id: ROW_ID, data: tracker };
-        const { error } = await supabase
+        const { error } = await supabaseClient
           .from(TABLE_NAME)
           .upsert(payload, { onConflict: 'id' });
         if (error) throw error;
@@ -193,12 +195,12 @@
       localStorage.setItem('submissionTracker', JSON.stringify(tracker));
     }
 
-    // Render the table
+    // ─── RENDER ─────────────────────────────────────────────
     function render() {
       const tbl = document.getElementById('tracker-table');
       tbl.innerHTML = '';
 
-      // Header
+      // Header row
       const thead = document.createElement('thead');
       const hr    = document.createElement('tr');
       hr.innerHTML = '<th>Roll No.</th>' +
@@ -208,7 +210,7 @@
       thead.appendChild(hr);
       tbl.appendChild(thead);
 
-      // Body
+      // Body rows
       const tbody = document.createElement('tbody');
       for (let r = 1; r <= 33; r++) {
         const row = document.createElement('tr');
@@ -222,7 +224,7 @@
       }
       tbl.appendChild(tbody);
 
-      // Checkbox handlers
+      // Wire up checkbox change events
       tbl.querySelectorAll('input[type=checkbox]').forEach(cb => {
         cb.addEventListener('change', () => {
           const r = cb.dataset.roll, d = cb.dataset.date;
@@ -231,7 +233,7 @@
         });
       });
 
-      // Remove-date handlers
+      // Wire up remove-date buttons
       tbl.querySelectorAll('.remove-date').forEach(btn => {
         btn.addEventListener('click', () => {
           const d = btn.dataset.date;
@@ -243,14 +245,15 @@
       });
     }
 
-    // Controls
+    // ─── CONTROLS ────────────────────────────────────────────
     document.getElementById('add-date').onclick = () => {
       const d = document.getElementById('date-input').value;
       if (!d) return alert('Select a date.');
       if (tracker.dates.includes(d)) return alert('Date already added.');
       tracker.dates.push(d);
       for (let r = 1; r <= 33; r++) tracker.data[r][d] = false;
-      saveTracker(); render();
+      saveTracker();
+      render();
     };
 
     document.getElementById('reset-all').onclick = () => {
@@ -260,10 +263,11 @@
           tracker.data[r][d] = false;
         })
       );
-      saveTracker(); render();
+      saveTracker();
+      render();
     };
 
-    // On load
+    // ─── STARTUP ────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', loadTracker);
   </script>
 </body>
