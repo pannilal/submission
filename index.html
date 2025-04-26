@@ -8,22 +8,26 @@
   <!-- SheetJS for Excel export -->
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <style>
+    /* Reset & Base */
     * { box-sizing: border-box; margin:0; padding:0; }
     body {
       font-family: 'Poppins', sans-serif;
       background:#eef1f5; color:#333; padding:20px;
     }
+    /* Card */
     .card {
       max-width:1000px; margin:auto;
       border-radius:12px; overflow:hidden;
       box-shadow:0 4px 16px rgba(0,0,0,0.1);
       background:#fff;
     }
+    /* Header */
     .header {
       background:#0069d9; color:#fff;
       padding:20px; text-align:center;
     }
     .header h1 { margin:0; font-size:1.8rem; }
+    /* Controls */
     .controls {
       padding:15px 20px;
       display:flex; flex-wrap:wrap;
@@ -40,16 +44,20 @@
       cursor:pointer; border:none; color:#fff;
       transition:background .2s;
     }
-    .controls #add-date { background:#28a745; }
-    .controls #add-date:hover { background:#218838; }
-    .controls #export-full { background:#17a2b8; }
-    .controls #export-full:hover { background:#138496; }
-    .controls #export-chapter { background:#ffc107; color:#212529; }
-    .controls #export-chapter:hover { background:#e0a800; }
-    .controls #reset-all { background:#dc3545; }
-    .controls #reset-all:hover { background:#c82333; }
-    .table-wrapper { overflow-x:auto; padding:20px; }
-    table { width:100%; border-collapse:collapse; min-width:700px; }
+    #add-date { background:#28a745; }
+    #add-date:hover { background:#218838; }
+    #export-full { background:#17a2b8; }
+    #export-full:hover { background:#138496; }
+    #export-chapter { background:#ffc107; color:#212529; }
+    #export-chapter:hover { background:#e0a800; }
+    #reset-all { background:#dc3545; }
+    #reset-all:hover { background:#c82333; }
+
+    /* Table */
+    .table-wrapper { overflow-x:auto; background:#fff; }
+    table {
+      width:100%; border-collapse:collapse; min-width:700px;
+    }
     th, td {
       border:1px solid #e0e0e0; padding:8px; text-align:center;
     }
@@ -58,239 +66,250 @@
       position:sticky; top:0; z-index:2;
     }
     tbody tr:nth-child(odd) { background:#f9f9f9; }
+
+    /* Status dropdowns */
     select.status {
-      padding:4px;
-      border-radius:4px;
-      border:1px solid #aaa;
-      font-size:0.9rem;
-      width:100%;
+      padding:4px; border-radius:4px; border:1px solid #aaa;
+      font-size:0.9rem; width:100%;
     }
-    /* color codes */
-    .status-timely, .status-complete { background:#d4edda; color:#155724; }
-    .status-delayed, .status-incomplete { background:#f8d7da; color:#721c24; }
-    .status-absent { background:#e2e3e5; color:#343a40; }
+    .status-timely, .status-complete {
+      background:#d4edda; color:#155724;
+    }
+    .status-delayed, .status-incomplete {
+      background:#f8d7da; color:#721c24;
+    }
+    .status-absent {
+      background:#e2e3e5; color:#343a40;
+    }
+    /* disable completion when absent */
+    select.status-complete:disabled,
+    select.status-incomplete:disabled {
+      background:#e2e3e5; color:#343a40;
+      cursor:not-allowed; opacity:0.7;
+    }
     .remove-date {
-      background:none; border:none; color:#fff; margin-left:5px;
-      font-weight:bold; cursor:pointer;
+      background:none; border:none; color:#fff;
+      margin-left:5px; font-weight:bold; cursor:pointer;
     }
     .remove-date:hover { color:#ffcccc; }
   </style>
 </head>
 <body>
 
-<div class="card">
-  <div class="header"><h1>Notebook Submission Tracker</h1></div>
+  <div class="card">
+    <div class="header"><h1>Notebook Submission Tracker</h1></div>
 
-  <div class="controls">
-    <select id="class-select">
-      <!-- filled by JS -->
-    </select>
-    <input type="date" id="date-input">
-    <input type="text" id="chapter-input" placeholder="Chapter name">
-    <button id="add-date">Add Date & Chapter</button>
-    <button id="export-full">Download Full Data</button>
-    <button id="export-chapter">Download Chapter</button>
-    <button id="reset-all">Reset All</button>
+    <div class="controls">
+      <select id="class-select"></select>
+      <input type="date" id="date-input">
+      <input type="text" id="chapter-input" placeholder="Chapter name">
+      <button id="add-date">Add Date & Chapter</button>
+      <button id="export-full">Download Full Data</button>
+      <button id="export-chapter">Download Chapter</button>
+      <button id="reset-all">Reset All</button>
+    </div>
+
+    <div class="table-wrapper">
+      <table id="tracker-table"></table>
+    </div>
   </div>
 
-  <div class="table-wrapper">
-    <table id="tracker-table"></table>
-  </div>
-</div>
+  <script>
+    // 1) YOUR CLASS LISTS: fill with up to 33 names each
+    const classLists = {
+      '9-G': ['Alice','Bob','Charlie', /* … etc (33 names) … */],
+      '9-C': ['David','Eva','Frank', /* … etc … */]
+    };
 
-<script>
-  // 1) YOUR CLASS LISTS: roll 1–33 names per class-section
-  const classLists = {
-    '9-G': [
-      'Alice','Bob','Charlie', /* … up to 33 names … */
-    ],
-    '9-C': [
-      'David','Eva','Frank', /* … */
-    ]
-  };
+    // 2) STATE
+    let currentClass = Object.keys(classLists)[0];
+    let events       = []; // {date, chapter}
+    let dataStore    = {}; // dataStore[class][roll][eventKey] = {timeliness, completeness}
 
-  // 2) STATE
-  let currentClass = Object.keys(classLists)[0];
-  let events = []; // { date:'YYYY-MM-DD', chapter:'Name' }
-  let dataStore = {}; 
-  // dataStore['9-G'] = { roll: { 'date|chapter': {complete:true,timely:true,absent:false} } }
+    // 3) UTIL
+    function keyOf(e){ return `${e.date}|${e.chapter}`; }
 
-  // 3) HELPERS
-  function keyOf(e){ return `${e.date}|${e.chapter}` }
-
-  function initClass(cls){
-    currentClass=cls;
-    if(!dataStore[cls]){
-      dataStore[cls]={};
-      for(let r=1;r<=33;r++) dataStore[cls][r]={};
+    function initClass(cls){
+      currentClass = cls;
+      if(!dataStore[cls]){
+        dataStore[cls] = {};
+        for(let r=1;r<=33;r++) dataStore[cls][r] = {};
+      }
+      render();
     }
-    render();
-  }
 
-  // 4) RENDER
-  function render(){
-    const tbl = document.getElementById('tracker-table');
-    tbl.innerHTML = '';
+    // 4) RENDER
+    function render(){
+      const tbl = document.getElementById('tracker-table');
+      tbl.innerHTML = '';
 
-    // header
-    const thead = document.createElement('thead');
-    const hr = document.createElement('tr');
-    hr.innerHTML = `<th>Roll</th><th>Name</th>` +
-      events.map(e=>
-        `<th>${e.date}<br>${e.chapter}
-           <button class="remove-date" data-key="${keyOf(e)}">×</button>
-         </th>`
-      ).join('');
-    thead.appendChild(hr);
-    tbl.appendChild(thead);
-
-    // body
-    const tbody = document.createElement('tbody');
-    const names = classLists[currentClass];
-    for(let r=1;r<=33;r++){
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${r}</td><td>${names[r-1]||''}</td>` +
+      // HEADER
+      const thead = document.createElement('thead');
+      const hr    = document.createElement('tr');
+      hr.innerHTML = '<th>Roll</th><th>Name</th>' +
         events.map(e=>{
-          const cellKey=keyOf(e);
-          const st = dataStore[currentClass][r][cellKey] || 
-                     {complete:true,timely:true,absent:false};
-          const options = [
-            ['timely','Timely Submitted'],
-            ['complete','Complete'],
-            ['delayed','Delayed'],
-            ['incomplete','Incomplete'],
-            ['absent','Absent']
-          ];
-          // pick one: absent > incomplete/delayed > complete/timely
-          let sel='incomplete';
-          if(st.absent) sel='absent';
-          else if(!st.complete) sel='incomplete';
-          else if(!st.timely) sel='delayed';
-          else sel = 'timely';
-          return `<td>
-            <select class="status status-${sel}" 
-                    data-roll="${r}" data-key="${cellKey}">
-              ${options.map(([v,label])=>
-                `<option value="${v}"${v===sel?' selected':''}>${label}</option>`
-              ).join('')}
+          const title = `${e.date} — ${e.chapter}`;
+          return `<th>${title}<br><small>(Timeliness)</small>
+                    <button class="remove-date" data-key="${keyOf(e)}">×</button>
+                  </th>
+                  <th><small>Completion</small></th>`;
+        }).join('');
+      thead.appendChild(hr);
+      tbl.appendChild(thead);
+
+      // BODY
+      const tbody = document.createElement('tbody');
+      const names = classLists[currentClass];
+      for(let r=1;r<=33;r++){
+        const tr = document.createElement('tr');
+        let html = `<td>${r}</td><td>${names[r-1]||''}</td>`;
+        events.forEach(e=>{
+          const k  = keyOf(e);
+          const st = dataStore[currentClass][r][k] || 
+                     {timeliness:'timely', completeness:'complete'};
+
+          // timeliness
+          html += `<td>
+            <select class="status status-${st.timeliness}" 
+                    data-type="timeliness" data-roll="${r}" data-key="${k}">
+              <option value="timely"${st.timeliness==='timely'?' selected':''}>Timely</option>
+              <option value="delayed"${st.timeliness==='delayed'?' selected':''}>Delayed</option>
+              <option value="absent"${st.timeliness==='absent'?' selected':''}>Absent</option>
             </select>
           </td>`;
-        }).join('');
-      tbody.appendChild(tr);
-    }
-    tbl.appendChild(tbody);
 
-    // wire up removes
-    thead.querySelectorAll('.remove-date')
-      .forEach(btn=>btn.onclick=()=>{
-        const k=btn.dataset.key;
-        events = events.filter(e=>keyOf(e)!==k);
-        // clear data
-        for(let r=1;r<=33;r++) delete dataStore[currentClass][r][k];
-        render();
+          // completion (disable if absent)
+          const dis = st.timeliness==='absent' ? ' disabled' : '';
+          html += `<td>
+            <select class="status status-${st.completeness}" 
+                    data-type="completion" data-roll="${r}" data-key="${k}"${dis}>
+              <option value="complete"${st.completeness==='complete'?' selected':''}>Complete</option>
+              <option value="incomplete"${st.completeness==='incomplete'?' selected':''}>Incomplete</option>
+            </select>
+          </td>`;
+        });
+        tr.innerHTML = html;
+        tbody.appendChild(tr);
+      }
+      tbl.appendChild(tbody);
+
+      // REMOVE handlers
+      thead.querySelectorAll('.remove-date').forEach(btn=>{
+        btn.onclick = ()=>{
+          const key = btn.dataset.key;
+          events = events.filter(e=>keyOf(e)!==key);
+          for(let r=1;r<=33;r++) delete dataStore[currentClass][r][key];
+          render();
+        };
       });
 
-    // wire up selects
-    tbody.querySelectorAll('select.status').forEach(sel=>{
-      sel.onchange=()=>{
-        const r=sel.dataset.roll, k=sel.dataset.key, v=sel.value;
-        const st={complete:false,timely:false,absent:false};
-        if(v==='absent')        st.absent=true;
-        else if(v==='timely')   { st.complete=true; st.timely=true; }
-        else if(v==='complete'){ st.complete=true; st.timely=false; }
-        else if(v==='delayed')   st.timely=false;
-        else if(v==='incomplete')st.complete=false;
-        dataStore[currentClass][r][k]=st;
-        render(); // re-render to recolor
-      };
-    });
-  }
+      // STATUS change handlers
+      tbody.querySelectorAll('select.status').forEach(sel=>{
+        sel.onchange = ()=>{
+          const r  = sel.dataset.roll;
+          const k  = sel.dataset.key;
+          const t  = sel.dataset.type;     // timeliness or completion
+          const v  = sel.value;
+          const st = dataStore[currentClass][r][k] || {};
 
-  // 5) CONTROLS
-  // class selector
-  const cs = document.getElementById('class-select');
-  Object.keys(classLists).forEach(c=>{
-    const o=document.createElement('option');
-    o.value=c; o.textContent=c;
-    cs.appendChild(o);
-  });
-  cs.onchange=()=>initClass(cs.value);
-
-  // add date+chapter
-  document.getElementById('add-date').onclick=()=>{
-    const date=document.getElementById('date-input').value;
-    const chap=document.getElementById('chapter-input').value.trim();
-    if(!date||!chap) return alert('Select a date and enter chapter.');
-    events.push({date,chapter:chap});
-    // default all to timely+complete
-    for(let r=1;r<=33;r++){
-      dataStore[currentClass][r][keyOf({date,chapter:chap})]
-        ={complete:true,timely:true,absent:false};
+          if(t==='timeliness'){
+            st.timeliness = v;
+            if(v==='absent') st.completeness = 'incomplete';
+          } else {
+            st.completeness = v;
+          }
+          dataStore[currentClass][r][k] = st;
+          render();  // re-render to apply colors & disables
+        };
+      });
     }
-    render();
-  };
 
-  // reset all
-  document.getElementById('reset-all').onclick=()=>{
-    if(!confirm('Clear everything for this class?'))return;
-    events=[]; dataStore[currentClass]={};
-    initClass(currentClass);
-  };
+    // 5) CONTROLS
+    // class dropdown
+    const cs = document.getElementById('class-select');
+    Object.keys(classLists).forEach(c=>{
+      const o = document.createElement('option');
+      o.value = c; o.textContent = c;
+      cs.appendChild(o);
+    });
+    cs.onchange = ()=>initClass(cs.value);
 
-  // EXPORT
-  function exportSheet(data, name){
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
-    XLSX.writeFile(wb, name + '.xlsx');
-  }
+    // add date+chapter
+    document.getElementById('add-date').onclick = ()=>{
+      const date = document.getElementById('date-input').value;
+      const chap = document.getElementById('chapter-input').value.trim();
+      if(!date||!chap) return alert('Select a date and enter a chapter.');
+      const e = {date,chapter:chap};
+      events.push(e);
+      const k = keyOf(e);
+      for(let r=1;r<=33;r++){
+        dataStore[currentClass][r][k] = {
+          timeliness:'timely',
+          completeness:'complete'
+        };
+      }
+      render();
+    };
 
-  // full export
-  document.getElementById('export-full').onclick=()=>{
-    const rows=[];
-    events.forEach(e=>{
-      const k=keyOf(e);
+    // reset all for this class
+    document.getElementById('reset-all').onclick = ()=>{
+      if(!confirm('Clear all data for this class?')) return;
+      events = [];
+      dataStore[currentClass] = {};
+      for(let r=1;r<=33;r++) dataStore[currentClass][r] = {};
+      render();
+    };
+
+    // export utilities
+    function exportSheet(data, name){
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+      XLSX.writeFile(wb, name + '.xlsx');
+    }
+    // full export
+    document.getElementById('export-full').onclick = ()=>{
+      const rows = [];
+      events.forEach(e=>{
+        const k = keyOf(e);
+        for(let r=1;r<=33;r++){
+          const st = dataStore[currentClass][r][k]||{};
+          rows.push({
+            Class:      currentClass,
+            Roll:       r,
+            Name:       classLists[currentClass][r-1]||'',
+            Date:       e.date,
+            Chapter:    e.chapter,
+            Timeliness: st.timeliness.charAt(0).toUpperCase()+st.timeliness.slice(1),
+            Completion: st.completeness.charAt(0).toUpperCase()+st.completeness.slice(1)
+          });
+        }
+      });
+      exportSheet(rows, `${currentClass}_full`);
+    };
+    // chapter export
+    document.getElementById('export-chapter').onclick = ()=>{
+      if(!events.length) return alert('No events to export');
+      const e = events[events.length-1];
+      const k = keyOf(e);
+      const rows = [];
       for(let r=1;r<=33;r++){
         const st = dataStore[currentClass][r][k]||{};
         rows.push({
-          Class: currentClass,
-          Roll: r,
-          Name: classLists[currentClass][r-1]||'',
-          Date: e.date,
-          Chapter: e.chapter,
-          Status: st.absent?'Absent':
-                  (!st.complete?'Incomplete':
-                   (!st.timely?'Delayed':'Timely'))
+          Class:      currentClass,
+          Roll:       r,
+          Name:       classLists[currentClass][r-1]||'',
+          Date:       e.date,
+          Chapter:    e.chapter,
+          Timeliness: st.timeliness.charAt(0).toUpperCase()+st.timeliness.slice(1),
+          Completion: st.completeness.charAt(0).toUpperCase()+st.completeness.slice(1)
         });
       }
-    });
-    exportSheet(rows, `${currentClass}_full`);
-  };
+      exportSheet(rows, `${currentClass}_${e.chapter}`);
+    };
 
-  // chapter export
-  document.getElementById('export-chapter').onclick=()=>{
-    if(!events.length) return alert('No events to export');
-    const e = events[events.length-1];
-    const k = keyOf(e);
-    const rows = [];
-    for(let r=1;r<=33;r++){
-      const st = dataStore[currentClass][r][k]||{};
-      rows.push({
-        Class: currentClass,
-        Roll: r,
-        Name: classLists[currentClass][r-1]||'',
-        Date: e.date,
-        Chapter: e.chapter,
-        Status: st.absent?'Absent':
-                (!st.complete?'Incomplete':
-                 (!st.timely?'Delayed':'Timely'))
-      });
-    }
-    exportSheet(rows, `${currentClass}_${e.chapter}`);
-  };
-
-  // startup
-  initClass(currentClass);
-</script>
+    // INIT
+    initClass(currentClass);
+  </script>
 </body>
 </html>
