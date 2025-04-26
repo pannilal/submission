@@ -1,6 +1,7 @@
 {
   "name": "notebook-tracker",
   "version": "1.0.0",
+  "private": true,
   "dependencies": {
     "faunadb": "^4.8.0"
   }
