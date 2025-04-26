@@ -1,16 +1,20 @@
 const faunadb = require('faunadb');
-const q = faunadb.query;
+const q      = faunadb.query;
 const client = new faunadb.Client({ secret: process.env.FAUNADB_SECRET });
+const trackerRef = q.Ref(q.Collection('Submissions'), 'notebookTracker');
 
 exports.handler = async () => {
   try {
-    const ref = q.Ref(q.Collection('Submissions'), 'notebookTracker');
-    const result = await client.query(q.Get(ref));
-    return { statusCode: 200, body: JSON.stringify(result.data) };
+    const { data } = await client.query(
+      q.If(
+        q.Exists(trackerRef),
+        q.Get(trackerRef),
+        { data: { dates: [], data: {} } }
+      )
+    );
+    return { statusCode: 200, body: JSON.stringify(data) };
   } catch (err) {
-    if (err.name === 'NotFound') {
-      return { statusCode: 200, body: JSON.stringify({ dates: [], data: {} }) };
-    }
-    return { statusCode: 500, body: err.toString() };
+    console.error('LOAD ERROR', err);
+    return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
   }
 };
