@@ -4,65 +4,62 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Notebook Submission Tracker</title>
-  <!-- Google Fonts -->
+  <!-- Google Font -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
-  <!-- SheetJS for Excel exports -->
+  <!-- SheetJS for Excel export -->
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <!-- Your generated class/student data -->
   <script src="classLists_ready.js"></script>
   <script src="rowColors_ready.js"></script>
-  <!-- Supabase client -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Supabase UMD bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <style>
-    /* Reset & Base */
-    * { box-sizing: border-box; margin:0; padding:0; }
-    body { font-family:'Poppins',sans-serif; background:#eef1f5; color:#333; padding:20px; }
-    /* Card */
-    .card { max-width:1200px; margin:auto; border-radius:12px; overflow:hidden;
-            box-shadow:0 4px 16px rgba(0,0,0,0.1); background:#fff; }
-    .header { background:#0069d9; color:#fff; padding:20px; text-align:center; }
-    .header h1 { margin:0; font-size:1.8rem; }
-    /* Controls */
-    .controls { padding:15px 20px; display:flex; flex-wrap:wrap; gap:10px;
-                align-items:center; background:#fafafa; border-bottom:1px solid #ddd;
-                justify-content:center; }
+    * { box-sizing:border-box; margin:0; padding:0 }
+    body { font:16px/1.5 'Poppins',sans-serif; background:#eef1f5; color:#333 }
+    .card { max-width:1200px; margin:40px auto; background:#fff;
+            border-radius:12px; box-shadow:0 4px 16px rgba(0,0,0,0.1);
+            overflow:hidden }
+    .header { background:#0069d9; color:#fff; padding:20px; text-align:center }
+    .header h1 { margin:0; font-size:1.8rem }
+    .controls { display:flex; flex-wrap:wrap; gap:10px; align-items:center;
+                padding:15px 20px; background:#fafafa; border-bottom:1px solid #ddd;
+                justify-content:center }
     .controls select, .controls input, .controls button {
-      padding:8px 12px; font-size:1rem; border:1px solid #ccc; border-radius:5px;
+      font-size:1rem; padding:8px 12px; border:1px solid #ccc; border-radius:5px;
     }
-    .controls button { cursor:pointer; border:none; color:#fff; transition:background .2s; }
-    #add-date { background:#28a745; } #add-date:hover { background:#218838; }
-    #export-full { background:#17a2b8; } #export-full:hover { background:#138496; }
-    #export-chapter { background:#ffc107; color:#212529; } #export-chapter:hover { background:#e0a800; }
-    #reset-all { background:#dc3545; } #reset-all:hover { background:#c82333; }
-    /* Table */
-    .table-wrapper { overflow-x:auto; background:#fff; }
-    table { width:100%; border-collapse:collapse; table-layout:auto; }
-    th, td { border:1px solid #e0e0e0; padding:8px; text-align:center; white-space:nowrap; }
-    thead th { background:#0069d9; color:#fff; position:sticky; top:0; z-index:2; }
-    tbody tr:nth-child(odd) { background:#f9f9f9; }
-    td.name-cell { text-align:left; }
-    .remove-date { background:none; border:none; color:#fff; margin-left:5px;
-                   font-weight:bold; cursor:pointer; }
-    .remove-date:hover { color:#ffcccc; }
-    /* Status dropdown colors */
-    select.status { padding:4px; border-radius:4px; border:1px solid #aaa; font-size:0.9rem; width:100%; }
-    select.status-timely, select.status-complete { background-color:#d4edda!important; color:#155724!important; }
-    select.status-delayed, select.status-incomplete { background-color:#f8d7da!important; color:#721c24!important; }
-    select.status-absent { background-color:#e2e3e5!important; color:#343a40!important; }
-    select.status-complete:disabled, select.status-incomplete:disabled {
-      background-color:#e2e3e5!important; color:#343a40!important; cursor:not-allowed; opacity:0.7;
-    }
+    #class-select, #chapter-select, #date-input { min-width:140px }
+    #chapter-input { min-width:200px; flex:1; max-width:300px }
+    button { color:#fff; border:none; cursor:pointer; transition:background .2s }
+    #add-date { background:#28a745 }       #add-date:hover { background:#218838 }
+    #export-full { background:#17a2b8 }     #export-full:hover { background:#138496 }
+    #export-chapter { background:#ffc107; color:#212529 }
+      #export-chapter:hover { background:#e0a800 }
+    #reset-all { background:#dc3545 }       #reset-all:hover { background:#c82333 }
+    .table-wrapper { overflow-x:auto; background:#fff }
+    table { width:100%; border-collapse:collapse; table-layout:auto }
+    th, td { border:1px solid #e0e0e0; padding:8px; text-align:center; white-space:nowrap }
+    td.name-cell { text-align:left }
+    thead th { background:#0069d9; color:#fff; position:sticky; top:0 }
+    tbody tr:nth-child(odd) { background:#f9f9f9 }
+    .remove-date { background:none; border:none; color:#fff; margin-left:5px; cursor:pointer }
+    .remove-date:hover { color:#ffcccc }
+    select.status { padding:4px; border-radius:4px; border:1px solid #aaa; width:100% }
+    select.status-timely, select.status-complete   { background:#d4edda!important; color:#155724!important }
+    select.status-delayed, select.status-incomplete { background:#f8d7da!important; color:#721C24!important }
+    select.status-absent                            { background:#e2e3e5!important; color:#343A40!important }
+    select:disabled { opacity:0.7; cursor:not-allowed }
   </style>
 </head>
 <body>
+
   <div class="card">
     <div class="header"><h1>Notebook Submission Tracker</h1></div>
     <div class="controls">
-      <select id="class-select"></select>
-      <select id="chapter-select"></select>
+      <select id="class-select"><option value="" disabled selected>Select Class</option></select>
+      <select id="chapter-select" disabled><option value="">All Chapters</option></select>
       <input type="date" id="date-input">
       <input type="text" id="chapter-input" placeholder="Chapter name">
-      <button id="add-date">Add Date & Chapter</button>
+      <button id="add-date">Add Date &amp; Chapter</button>
       <button id="export-full">Download Full Data</button>
       <button id="export-chapter">Download Chapter</button>
       <button id="reset-all">Reset All</button>
@@ -73,163 +70,178 @@
   </div>
 
   <script>
-  // — Supabase setup
-  const SUPABASE_URL = 'https://auirudgmwlkdscgodwte.supabase.co';
-  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'; // your anon key
-  const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+  // Supabase client initialization
+  const SUPA_URL = 'https://auirudgmwlkdscgodwte.supabase.co';
+  const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS...';
+  const supabaseClient = supabase.createClient(SUPA_URL, SUPA_KEY);
 
-  // — State
-  let currentClass = Object.keys(classLists)[0];
-  let events = [];
-  let dataStore = {};
-  let selectedChapter = "";
+  // State
+  let currentClass = null, events = [], dataStore = {}, selectedChapter = "";
 
-  // — Helpers
-  function keyOf(e){ return `${e.date}|${e.chapter}`; }
-  function capitalize(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
+  // Helpers
+  const keyOf = e => `${e.date}|${e.chapter}`;
+  const capitalize = s => s.charAt(0).toUpperCase() + s.slice(1);
 
-  // — Supabase I/O
+  // DB I/O
   async function saveToDB(){
-    await supabase
-      .from('tracker_data')
-      .upsert({ id: currentClass, class_name: currentClass, data: {events,dataStore} });
+    await supabaseClient.from('tracker_data')
+      .upsert({ id: currentClass, class_name: currentClass, data: { events, dataStore } });
   }
   async function loadFromDB(cls){
-    const { data } = await supabase
-      .from('tracker_data')
-      .select('data')
-      .eq('id', cls)
-      .single();
-    if(data?.data){
-      events = data.data.events;
-      dataStore = data.data.dataStore;
+    currentClass = cls;
+    const { data:row, error } = await supabaseClient
+      .from('tracker_data').select('data').eq('id',cls).single();
+    if(error && error.code!=='PGRST116') console.error(error);
+    if(row?.data){
+      events    = row.data.events    || [];
+      dataStore = row.data.dataStore || {};
     } else {
-      events = [];
-      dataStore[cls] = {};
+      events = []; dataStore[cls] = {};
       classLists[cls].forEach((_,i)=> dataStore[cls][i+1]={});
     }
     render();
   }
 
-  // — Render UI
+  // Render
   function render(){
+    // Chapter filter
+    const chapSel = document.getElementById('chapter-select');
+    chapSel.innerHTML = '<option value="">All Chapters</option>' +
+      events.map(e=>`<option value="${e.chapter}">${e.chapter}</option>`).join('');
+    chapSel.disabled = events.length===0;
+
+    // Table header
     const tbl = document.getElementById('tracker-table');
     tbl.innerHTML = '';
-    // Header
-    const thead = document.createElement('thead'), hr=document.createElement('tr');
+    const thead = tbl.createTHead(), hr = thead.insertRow();
     hr.innerHTML = '<th>Roll</th><th>Name</th>' +
-      events
-        .filter(e=>!selectedChapter||e.chapter===selectedChapter)
-        .map(e=>`<th>${e.date}<br>${e.chapter}</th><th>Status</th>`)
-        .join('');
-    thead.appendChild(hr); tbl.appendChild(thead);
-    // Body
-    const tbody=document.createElement('tbody');
-    const names=classLists[currentClass], colors=rowColors[currentClass]||{};
-    names.forEach((name,idx)=>{
-      const r=idx+1, tr=document.createElement('tr');
+      events.filter(e=>!selectedChapter||e.chapter===selectedChapter)
+            .map(e=>`
+      <th>${e.date}<br>${e.chapter}
+        <button class="remove-date" data-key="${keyOf(e)}">×</button>
+      </th><th>Status</th>`).join('');
+
+    // Table body
+    const tbody = tbl.createTBody(),
+          names = classLists[currentClass],
+          colors = rowColors[currentClass]||{};
+    names.forEach((nm,i)=>{
+      const r=i+1, tr=tbody.insertRow();
       tr.classList.add('student-row');
-      if(colors[r]) tr.style.backgroundColor=colors[r];
-      let html=`<td>${r}</td><td class="name-cell">${name}</td>`;
+      if(colors[r]) tr.style.backgroundColor = colors[r];
+      let html = `<td>${r}</td><td class="name-cell">${nm}</td>`;
       events.filter(e=>!selectedChapter||e.chapter===selectedChapter).forEach(e=>{
-        const k=keyOf(e), st=dataStore[currentClass][r][k]||{timeliness:'timely',completion:'complete'};
-        html+=`<td>${capitalize(st.timeliness)}</td><td>${capitalize(st.completion)}</td>`;
+        const k=keyOf(e),
+              st = dataStore[currentClass][r]?.[k] || { timeliness:'timely', completion:'complete' };
+        html += `
+          <td>
+            <select class="status status-${st.timeliness}"
+                    data-type="timeliness" data-roll="${r}" data-key="${k}">
+              <option value="timely"${st.timeliness==='timely'?' selected':''}>Timely</option>
+              <option value="delayed"${st.timeliness==='delayed'?' selected':''}>Delayed</option>
+              <option value="absent"${st.timeliness==='absent'?' selected':''}>Absent</option>
+            </select>
+          </td>
+          <td>
+            <select class="status status-${st.completion}"
+                    data-type="completion" data-roll="${r}" data-key="${k}"
+                    ${st.timeliness==='absent'?' disabled':''}>
+              <option value="complete"${st.completion==='complete'?' selected':''}>Complete</option>
+              <option value="incomplete"${st.completion==='incomplete'?' selected':''}>Incomplete</option>
+            </select>
+          </td>`;
       });
-      tr.innerHTML=html; tbody.appendChild(tr);
+      tr.innerHTML = html;
     });
-    tbl.appendChild(tbody);
-    // Chapter dropdown
-    const chSel=document.getElementById('chapter-select');
-    chSel.innerHTML='<option value="">All Chapters</option>'+
-      events.map(e=>`<option value="${e.chapter}">${e.chapter}</option>`).join('');
-    chSel.value=selectedChapter;
+
+    // Remove-date handlers
+    thead.querySelectorAll('.remove-date').forEach(btn=>{
+      btn.onclick = ()=>{
+        const key=btn.dataset.key;
+        events = events.filter(e=>keyOf(e)!==key);
+        classLists[currentClass].forEach((_,i)=>delete dataStore[currentClass][i+1]?.[key]);
+        saveToDB(); render();
+      };
+    });
+
+    // Status dropdown change
+    document.querySelectorAll('select.status').forEach(sel=>{
+      sel.onchange = ()=>{
+        const r=sel.dataset.roll, k=sel.dataset.key;
+        const type=sel.dataset.type, v=sel.value;
+        const st = dataStore[currentClass][r][k] || {};
+        if(type==='timeliness'){
+          st.timeliness=v;
+          if(v==='absent') st.completion='incomplete';
+        } else {
+          st.completion=v;
+        }
+        dataStore[currentClass][r][k]=st;
+        saveToDB(); render();
+      };
+    });
   }
 
-  // — Controls
-  document.getElementById('class-select').onchange=async e=>{
-    currentClass=e.target.value;
-    await loadFromDB(currentClass);
-  };
-  document.getElementById('chapter-select').onchange=e=>{
-    selectedChapter=e.target.value; render();
-  };
-  document.getElementById('add-date').onclick=()=>{
-    const date=document.getElementById('date-input').value,
-          chap=document.getElementById('chapter-input').value.trim();
-    if(!date||!chap)return alert('Select date & enter chapter');
-    const e={date,chapter:chap}, k=keyOf(e);
+  // Controls
+  document.getElementById('class-select').onchange = e=>loadFromDB(e.target.value);
+  document.getElementById('chapter-select').onchange = e=>{selectedChapter=e.target.value; render()};
+  document.getElementById('add-date').onclick = ()=>{
+    const d=document.getElementById('date-input').value,
+          c=document.getElementById('chapter-input').value.trim();
+    if(!d||!c) return alert('Please select date & enter chapter');
+    const e={date:d,chapter:c}, k=keyOf(e);
     events.push(e);
-    classLists[currentClass].forEach((_,i)=>{
-      const r=i+1;
-      dataStore[currentClass][r][k]={timeliness:'timely',completion:'complete'};
-    });
+    classLists[currentClass].forEach((_,i)=>dataStore[currentClass][i+1][k]={timeliness:'timely',completion:'complete'});
     saveToDB(); render();
   };
-  document.getElementById('reset-all').onclick=()=>{
-    if(!confirm('Reset all data?'))return;
+  document.getElementById('reset-all').onclick = ()=>{
+    if(!confirm('Clear all data for this class?')) return;
     events=[]; dataStore[currentClass]={};
     classLists[currentClass].forEach((_,i)=>dataStore[currentClass][i+1]={});
     saveToDB(); render();
   };
 
-  // — Excel Export w/ Styles
-  function exportSheet(rows, name){
-    const ws=XLSX.utils.json_to_sheet(rows),
-          wb=XLSX.utils.book_new();
-    const headers=Object.keys(rows[0]),
-          tiIdx=headers.indexOf("Timeliness"),
-          coIdx=headers.indexOf("Completion");
-    rows.forEach((row,i)=>{
-      const r=i+1, t=row.Timeliness.toLowerCase(), c=row.Completion.toLowerCase(),
-            tCell=XLSX.utils.encode_cell({r,c:tiIdx}),
-            cCell=XLSX.utils.encode_cell({r,c:coIdx});
-      if(ws[tCell]){
-        if(t==="timely") ws[tCell].s={fill:{patternType:"solid",fgColor:{rgb:"D4EDDA"}},font:{color:{rgb:"155724"}}};
-        if(t==="delayed")ws[tCell].s={fill:{patternType:"solid",fgColor:{rgb:"F8D7DA"}},font:{color:{rgb:"721C24"}}};
-        if(t==="absent") ws[tCell].s={fill:{patternType:"solid",fgColor:{rgb:"E2E3E5"}},font:{color:{rgb:"343A40"}}};
-      }
-      if(ws[cCell]){
-        if(c==="complete") ws[cCell].s={fill:{patternType:"solid",fgColor:{rgb:"D4EDDA"}},font:{color:{rgb:"155724"}}};
-        if(c==="incomplete")ws[cCell].s={fill:{patternType:"solid",fgColor:{rgb:"F8D7DA"}},font:{color:{rgb:"721C24"}}};
-      }
-    });
-    XLSX.utils.book_append_sheet(wb,ws,"Sheet1");
-    XLSX.writeFile(wb,`${name}.xlsx`,{bookType:"xlsx",cellStyles:true});
-  }
-
-  document.getElementById('export-full').onclick=()=>{
-    const rows=[];
+  // Full-data export (pivot with Timeliness/Completion columns)
+  document.getElementById('export-full').onclick = () => {
+    if(!events.length) return alert('No data to export');
+    const headers=['Roll','Name'];
     events.forEach(e=>{
-      const k=keyOf(e);
-      classLists[currentClass].forEach((_,i)=>{
-        const r=i+1, st=dataStore[currentClass][r][k]||{};
-        rows.push({
-          Class:currentClass,Roll:r,Name:classLists[currentClass][r-1],
-          Date:e.date,Chapter:e.chapter,
-          Timeliness:capitalize(st.timeliness||"timely"),
-          Completion:capitalize(st.completion||"complete")
-        });
-      });
+      headers.push(`${e.chapter} – Timeliness`);
+      headers.push(`${e.chapter} – Completion`);
     });
-    exportSheet(rows,`${currentClass}_full`);
+    const rows = classLists[currentClass].map((nm,i)=>{
+      const r=i+1, row={Roll:r,Name:nm};
+      events.forEach(e=>{
+        const k=keyOf(e),
+              st=(dataStore[currentClass][r]?.[k])||{timeliness:'timely',completion:'complete'};
+        row[`${e.chapter} – Timeliness`] = capitalize(st.timeliness);
+        row[`${e.chapter} – Completion`]  = st.timeliness==='absent'?'N/A':capitalize(st.completion);
+      });
+      return row;
+    });
+    const ws = XLSX.utils.json_to_sheet(rows,{header:headers});
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,ws,'Full Data');
+    XLSX.writeFile(wb,`${currentClass}_full_data.xlsx`,{bookType:'xlsx',cellStyles:true});
   };
 
-  document.getElementById('export-chapter').onclick=()=>{
-    if(!events.length)return alert('No chapters yet');
+  // Chapter-data export
+  document.getElementById('export-chapter').onclick = ()=>{
+    if(!events.length) return alert('No data to export');
     const e=events[events.length-1],k=keyOf(e),rows=[];
     classLists[currentClass].forEach((_,i)=>{
-      const r=i+1, st=dataStore[currentClass][r][k]||{};
+      const r=i+1, st=dataStore[currentClass][r]?.[k]||{};
       rows.push({
         Class:currentClass,Roll:r,Name:classLists[currentClass][r-1],
         Date:e.date,Chapter:e.chapter,
-        Timeliness:capitalize(st.timeliness||"timely"),
-        Completion:capitalize(st.completion||"complete")
+        Timeliness:capitalize(st.timeliness||'timely'),
+        Completion:capitalize(st.completion||'complete')
       });
     });
-    exportSheet(rows,`${currentClass}_${e.chapter}`);
+    exportSheet(rows,`${currentClass}_${e.chapter.replace(/\s+/g,'_')}`);
   };
 
-  // — Init
+  // Init
   document.addEventListener('DOMContentLoaded',()=>{
     const cs=document.getElementById('class-select');
     Object.keys(classLists).forEach(c=>{
@@ -237,8 +249,32 @@
       o.value=c; o.textContent=c;
       cs.appendChild(o);
     });
-    loadFromDB(currentClass);
+    loadFromDB(Object.keys(classLists)[0]);
   });
+
+  // Excel export helper
+  function exportSheet(rows,name){
+    const ws=XLSX.utils.json_to_sheet(rows), wb=XLSX.utils.book_new(),
+          hdrs=Object.keys(rows[0]), tiIdx=hdrs.indexOf('Timeliness'),
+          coIdx=hdrs.indexOf('Completion');
+    rows.forEach((row,i)=>{
+      const idx=i+1, t=row.Timeliness?.toLowerCase(), c=row.Completion?.toLowerCase(),
+            tC=XLSX.utils.encode_cell({r:idx,c:tiIdx}),
+            cC=XLSX.utils.encode_cell({r:idx,c:coIdx});
+      if(ws[tC]){
+        if(t==='timely')   ws[tC].s={fill:{patternType:'solid',fgColor:{rgb:'D4EDDA'}},font:{color:{rgb:'155724'}}};
+        if(t==='delayed')  ws[tC].s={fill:{patternType:'solid',fgColor:{rgb:'F8D7DA'}},font:{color:{rgb:'721C24'}}};
+        if(t==='absent')   ws[tC].s={fill:{patternType:'solid',fgColor:{rgb:'E2E3E5'}},font:{color:{rgb:'343A40'}}};
+      }
+      if(ws[cC]){
+        if(c==='complete')   ws[cC].s={fill:{patternType:'solid',fgColor:{rgb:'D4EDDA'}},font:{color:{rgb:'155724'}}};
+        if(c==='incomplete') ws[cC].s={fill:{patternType:'solid',fgColor:{rgb:'F8D7DA'}},font:{color:{rgb:'721C24'}}};
+      }
+    });
+    XLSX.utils.book_append_sheet(wb,ws,'Sheet1');
+    XLSX.writeFile(wb,`${name}.xlsx`,{bookType:'xlsx',cellStyles:true});
+  }
   </script>
+
 </body>
 </html>
