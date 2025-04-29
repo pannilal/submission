@@ -1,17 +1,18 @@
-
--- SQL schema setup for tracker_data
 create table if not exists tracker_data (
   id text primary key,
   class_name text,
   data jsonb
 );
-
--- Enable RLS
+create table if not exists period_tracker (
+  class text,
+  date date,
+  roll int,
+  name text,
+  book text,
+  notebook text,
+  attendance text
+);
 alter table tracker_data enable row level security;
-
--- Allow full access to anon users
-create policy "Allow anon full access"
-  on tracker_data
-  for all
-  using (true)
-  with check (true);
+alter table period_tracker enable row level security;
+create policy "Allow anon full access" on tracker_data for all using (true) with check (true);
+create policy "Allow anon full access" on period_tracker for all using (true) with check (true);

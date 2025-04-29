@@ -19,7 +19,7 @@
     .controls select, .controls input, .controls button {
       font-size: 1rem; padding: 8px 12px; border: 1px solid #ccc; border-radius: 5px;
     }
-    #class-select, #chapter-select, #date-input, #view-mode { min-width: 140px }
+    #class-select, #chapter-select, #date-input, #view-mode, #mode-toggle { min-width: 140px }
     table { width: 100%; border-collapse: collapse; table-layout: auto; }
     th, td { border: 1px solid #e0e0e0; padding: 8px; text-align: center; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .name-cell { text-align: left; }
@@ -30,6 +30,10 @@
   <div class="card">
     <div class="header"><h1>Notebook Submission Tracker</h1></div>
     <div class="controls">
+      <select id="mode-toggle">
+        <option value="submission" selected>Submission</option>
+        <option value="materials">Materials</option>
+      </select>
       <select id="class-select"><option value="" disabled selected>Select Class</option></select>
       <select id="chapter-select" disabled><option value="">All Chapters</option></select>
       <select id="view-mode">
@@ -48,5 +52,24 @@
       <table id="tracker-table"></table>
     </div>
   </div>
+  <script>
+    document.getElementById('mode-toggle').addEventListener('change', (e) => {
+      if (e.target.value === 'materials') window.location.href = 'periods.html';
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const cs = document.getElementById('class-select');
+      Object.keys(classLists).forEach(c => {
+        const o = document.createElement('option');
+        o.value = c;
+        o.textContent = c;
+        cs.appendChild(o);
+      });
+
+      if (Object.keys(classLists).length > 0) {
+        loadFromDB(Object.keys(classLists)[0]);
+      }
+    });
+  </script>
 </body>
 </html>
