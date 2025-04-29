@@ -4,55 +4,159 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Period Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
   <script src="classLists_ready.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tablesort/5.2.1/tablesort.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+    * { box-sizing: border-box; margin: 0; padding: 0 }
+    body { font: 16px 'Poppins', sans-serif; background: #f5f5f5; color: #333 }
+    .card { max-width: 1200px; margin: 40px auto; background: #fff; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); overflow: hidden; }
+    .header { background: #0069d9; color: #fff; padding: 20px; text-align: center; }
+    .controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 15px 20px; background: #fafafa; border-bottom: 1px solid #ddd; justify-content: center; }
+    .controls select, .controls input, .controls button {
+      font-size: 1rem; padding: 8px 12px; border: 1px solid #ccc; border-radius: 5px;
+    }
     table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #fff; }
     th, td { padding: 10px; border: 1px solid #ddd; text-align: center; }
-    select { padding: 5px; }
+    thead th { background: #0069d9; color: #fff; cursor: pointer; }
+    select:disabled { background: #eee; color: #888; cursor: not-allowed; }
   </style>
 </head>
 <body>
-  <h2>Period Status Tracker</h2>
-  <select id="period-class"></select>
-  <table id="period-table">
-    <thead>
-      <tr>
-        <th>Roll</th>
-        <th>Name</th>
-        <th>Book</th>
-        <th>Notebook</th>
-        <th>Attendance</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+  <div class="card">
+    <div class="header"><h1>Period Status Tracker</h1></div>
+    <div class="controls">
+      <select id="period-class"><option value="">Select Class</option></select>
+      <input type="date" id="period-date">
+      <button id="load-data">Load Data</button>
+      <button id="save-period">Save</button>
+      <button id="export-period">Export</button>
+    </div>
+    <table id="period-table">
+      <thead>
+        <tr>
+          <th>Roll</th>
+          <th>Name</th>
+          <th>Book</th>
+          <th>Notebook</th>
+          <th>Attendance</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
 
   <script>
+    const SUPA_URL = 'https://auirudgmwlkdscgodwte.supabase.co';
+    const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1aXJ1ZGdtd2xrZHNjZ29kd3RlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU2NTI4OTgsImV4cCI6MjA2MTIyODg5OH0.ItuC1WisauB7SpDI0U4Qxl0Qz77IeSMpqh4NWrIej-A';
+    const supabase = supabase.createClient(SUPA_URL, SUPA_KEY);
+
     const dropdown = document.getElementById('period-class');
     const tableBody = document.querySelector('#period-table tbody');
+    const dateInput = document.getElementById('period-date');
+    const saveBtn = document.getElementById('save-period');
+    const exportBtn = document.getElementById('export-period');
+    const loadBtn = document.getElementById('load-data');
 
-    Object.keys(classLists).forEach(cls => {
-      const opt = document.createElement('option');
-      opt.value = cls;
-      opt.textContent = cls;
-      dropdown.appendChild(opt);
+    let currentClass = '';
+
+    document.addEventListener('DOMContentLoaded', () => {
+      Object.keys(classLists).forEach(cls => {
+        const opt = document.createElement('option');
+        opt.value = cls;
+        opt.textContent = cls;
+        dropdown.appendChild(opt);
+      });
     });
 
-    dropdown.addEventListener('change', () => {
-      const cls = dropdown.value;
+    loadBtn.addEventListener('click', async () => {
+      currentClass = dropdown.value;
+      const date = dateInput.value;
+      if (!currentClass || !date) return alert('Select class and date');
+      const { data, error } = await supabase.from('period_tracker')
+        .select('*').eq('class', currentClass).eq('date', date);
+      renderTable(currentClass, data || []);
+    });
+
+    function renderTable(cls, existing = []) {
+      const existingMap = {};
+      existing.forEach(row => { existingMap[row.roll] = row; });
+
       tableBody.innerHTML = '';
       classLists[cls].forEach((name, idx) => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td>${idx + 1}</td>
+        const r = idx + 1;
+        const prev = existingMap[r] || {};
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${r}</td>
           <td>${name}</td>
-          <td><select><option>Brought</option><option>Not Brought</option></select></td>
-          <td><select><option>Brought</option><option>Not Brought</option></select></td>
-          <td><select><option>Present</option><option>Absent</option></select></td>
+          <td><select class="book">
+            <option ${prev.book==='Brought'?'selected':''}>Brought</option>
+            <option ${prev.book==='Not Brought'?'selected':''}>Not Brought</option>
+          </select></td>
+          <td><select class="notebook">
+            <option ${prev.notebook==='Brought'?'selected':''}>Brought</option>
+            <option ${prev.notebook==='Not Brought'?'selected':''}>Not Brought</option>
+          </select></td>
+          <td><select class="attendance">
+            <option ${prev.attendance==='Present'?'selected':''}>Present</option>
+            <option ${prev.attendance==='Absent'?'selected':''}>Absent</option>
+          </select></td>
         `;
-        tableBody.appendChild(row);
+        tableBody.appendChild(tr);
       });
+
+      document.querySelectorAll('.attendance').forEach((attSel, i) => {
+        const row = tableBody.rows[i];
+        const bookSel = row.querySelector('.book');
+        const noteSel = row.querySelector('.notebook');
+        attSel.addEventListener('change', () => {
+          const absent = attSel.value === 'Absent';
+          bookSel.disabled = absent;
+          noteSel.disabled = absent;
+        });
+        attSel.dispatchEvent(new Event('change'));
+      });
+
+      new Tablesort(document.getElementById('period-table'));
+    }
+
+    saveBtn.addEventListener('click', async () => {
+      const cls = dropdown.value;
+      const date = dateInput.value;
+      if (!cls || !date) return alert('Select class and date');
+
+      await supabase.from('period_tracker').delete().eq('class', cls).eq('date', date);
+
+      const rows = classLists[cls].map((name, idx) => {
+        const row = tableBody.rows[idx];
+        return {
+          class: cls,
+          date,
+          roll: idx + 1,
+          name,
+          book: row.querySelector('.book').value,
+          notebook: row.querySelector('.notebook').value,
+          attendance: row.querySelector('.attendance').value
+        };
+      });
+
+      const { error } = await supabase.from('period_tracker').insert(rows);
+      if (error) alert('Failed to save');
+      else alert('Saved!');
+    });
+
+    exportBtn.addEventListener('click', async () => {
+      const cls = dropdown.value;
+      if (!cls) return alert('Select class');
+      const { data, error } = await supabase.from('period_tracker').select('*').eq('class', cls);
+      if (error || !data.length) return alert('No data found');
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, cls);
+      XLSX.writeFile(wb, `${cls}_period_data.xlsx`);
     });
   </script>
 </body>
