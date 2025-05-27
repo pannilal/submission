@@ -8,7 +8,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
   <script src="classLists_ready.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tablesort/5.2.1/tablesort.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="supabase_config.js"></script>
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0 }
@@ -50,9 +51,6 @@
   </div>
 
   <script>
-    const SUPA_URL = 'https://auirudgmwlkdscgodwte.supabase.co';
-    const SUPA_KEY = 'your-anon-key';
-    const supabase = supabase.createClient(SUPA_URL, SUPA_KEY);
 
     const dropdown = document.getElementById('period-class');
     const tableBody = document.querySelector('#period-table tbody');

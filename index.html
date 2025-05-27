@@ -9,6 +9,13 @@
   <script src="classLists_ready.js"></script>
   <script src="rowColors_ready.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <!-- 1) Supabase UMD bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <!-- 2) Your config file -->
+  <script src="supabase_config.js"></script>
+  <!-- 3) Other scripts -->
+  <script src="classLists_ready.js"></script>
+  <script src="rowColors_ready.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tablesort/5.2.1/tablesort.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0 }
@@ -177,6 +184,53 @@
             render();
           });
         }
+      };
+      document.getElementById('add-date').onclick = () => {
+        const date = document.getElementById('date-input').value;
+        const chapter = document.getElementById('chapter-input').value.trim();
+        if (!currentClass)           return alert('Select a class first');
+        if (!date || !chapter)       return alert('Enter both date & chapter');
+        const key = `${date}|${chapter}`;
+        if (events.some(e => keyOf(e) === key)) return alert('Already added');
+        events.push({ date, chapter });
+        dataStore[currentClass] = dataStore[currentClass] || {};
+        classLists[currentClass].forEach((_, i) => {
+          dataStore[currentClass][i+1] = dataStore[currentClass][i+1] || {};
+          dataStore[currentClass][i+1][key] = { timeliness: 'on-time', completion: 'complete' };
+        });
+        saveToDB().then(render);
+      };
+      document.getElementById('reset-all').onclick = () => {
+        if (!currentClass) return alert('Select a class first');
+        if (!confirm('Really reset all data?')) return;
+        events = [];
+        dataStore[currentClass] = {};
+        saveToDB().then(render);
+      };
+      document.getElementById('export-full').onclick = () => {
+        if (!currentClass) return alert('Select a class first');
+        const out = { id: currentClass, class_name: currentClass, events, dataStore };
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb,
+          XLSX.utils.json_to_sheet([out]), 'All_Data');
+        XLSX.writeFile(wb, `${currentClass}_full_data.xlsx`);
+      };
+      document.getElementById('export-chapter').onclick = () => {
+        if (!currentClass) return alert('Choose a chapter first');
+        const rows = classLists[currentClass].map((name, i) => {
+          const roll = i+1, cell = (dataStore[currentClass]||{})[roll] || {};
+          const stat = (cell[selectedChapter] || {});
+          return {
+            roll,
+            name,
+            timeliness: stat.timeliness || '',
+            completion: stat.completion || ''
+          };
+        });
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb,
+          XLSX.utils.json_to_sheet(rows), selectedChapter);
+        XLSX.writeFile(wb, `${currentClass}_${selectedChapter}.xlsx`);
       };
     });
   </script>
